@@ -423,6 +423,21 @@ sub hilights_buffer_closed {
 
     return weechat::WEECHAT_RC_OK;
 }
+
+sub unload {
+    my $buffer_out = weechat::config_get_plugin('buffer_name');
+    my $bp = weechat::buffer_search( "perl", $buffer_out );
+
+    if ($bp) {
+    system("beep");
+        # FIXME doesn't work, so simply set $Buffer to a wrong val
+        #weechat::unhook( 'hilights_buffer_closed' );
+        $Buffer = 0;
+        weechat::buffer_close($bp);
+    }
+
+    return weechat::WEECHAT_RC_OK;
+}
 # }}}
 
 # ------------------------------------------------------------------------------
@@ -431,7 +446,7 @@ sub hilights_buffer_closed {
 # init script
 # XXX If you don't check weechat::register() for succsess, %SETTINGS will be set
 # XXX by init_config() into the namespace of other perl scripts.
-if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "", "" ) ) {
+if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "unload", "" ) ) {
 
     weechat::hook_command( $COMMAND,  $DESCRIPTION,  $ARGS_HELP, $CMD_HELP, $COMPLETITION, $CALLBACK );
     weechat::hook_print( "", "", "", 1, "hilights_public" );
