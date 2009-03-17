@@ -32,21 +32,27 @@
 #
 # Usage:
 #
-#   Simply load the script, and all hilights in all channels will be sent to a
-#   single hilight buffer.
+#  Simply load the script, and all hilights in all channels will be sent to a
+#  single hilight buffer.
 #
-#   Simmple commands:
-#   /hilights clear        clears the buffer
-#   /hilights memo [text]  writes text into the script's buffer
+#  Simmple commands:
+#  /hilights always       enable hilights to buffer always.
+#  /hilights away_only    enable hilights to buffer if away only
+#  /hilights clear        clears the buffer
+#  /hilights memo [text]  writes text into the script's buffer
 #
 # Configuration:
 #
-#  away_only:       collect hihlights only if away isn't set
-#  format_public :  format-string for public hilights
-#  format_private:  format-string for private hilights
-#                   %n : nick,    %N : colored nick
-#                   %c : channel, %C : colored channel
-#                   %s : server
+#  away_only:              collect hihlights only if away isn't set
+#  show_hilights           Enable/disable handling of public messages
+#  show_priv_msg           Enable/disable handling of private messages
+#  show_priv_server_msg    Enable/disable handling of private server messages
+#  format_public :         format-string for public hilights
+#  format_private:         format-string for private hilights
+#                          %n : nick,    %N : colored nick
+#                          %c : channel, %C : colored channel
+#                          %s : server
+#   debug:                 Show some debug/warning messages on failture
 #
 # -----------------------------------------------------------------------------
 #
@@ -57,10 +63,10 @@
 #      Use a local_var to sign buffer with new hilights
 #      similar to 'jump_smart'a for unread
 # TODO Autoswitch hilight-buffer with buffer of top window if there are splitted
-#      windows in the current layout and buffer with new hiligth not visible
-# TODO Optional execute an external usr cmd with args:
+#      windows in the current layout and buffer with new highlight not visible
+# TODO Optional execute an external user cmd with args:
 #        nick, channel, server, message, ... (date/time?)
-#      Or write a special scrip for it.
+#      Or write a special script for it.
 #      Can be uesed for scripts using libnotify, make weechat speaking to you
 #      (I use festival for it)
 # TODO exclude nicks, channels, servers, ... by eg. user defined whitelists
@@ -71,9 +77,16 @@
 #
 # Changelog:
 #
+# Version 0.05 2009-03-17
+#   - new option 'show_priv_server_msg' value: 'on'/'off'
+#     enables/disables handling of private server messages
+#   - new option 'debug' value: 'on'/'off'
+#     enables/disables debug messages on failture
+#   - FIX: added some missing commands, options to Usage/Configuration in comments
+#
 # Version 0.04, 15 Mar, 2009
 #   - renamed cmd arg 'on_away' to 'away_only'
-
+#
 # Version 0.03, 15 Mar, 2009
 #   - Don't clash with Sharn's python script anymore
 #     renamed hilightbuffer.pl -> hilights.pl
@@ -112,18 +125,20 @@
 use strict;
 use warnings;
 
-my $Version = 0.04;
+my $Version = 0.05;
 
 # constants
 #
 # script default options
 my %SETTINGS = (
-    "buffer_name"     => "hilights",
-    "show_hilights"  => "on",
-    "away_only"      => "off",
-    "format_public"  => '%N.%C@%s',
-    "show_priv_msg"  => "on",
-    "format_private" => '%N@%s'
+    "buffer_name"          => "hilights",
+    "show_hilights"        => "on",
+    "away_only"            => "off",
+    "format_public"        => '%N.%C@%s',
+    "show_priv_msg"        => "on",
+    "format_private"       => '%N@%s',
+    "show_priv_server_msg" => "on",
+    "debug"                => "on",
 );
 
 my $SCRIPT      = "hilights";
@@ -143,15 +158,25 @@ Arguments:
 
 Config settings:
 
-    away_only:       Collect hihlights only if you're away.
-                     default: '$SETTINGS{away_only}'
-    format_public :  Format-string for public hilights.
-    format_private:  Format-string for private hilights.
-                     %n : nick,    %N : colored nick
-                     %c : channel, %C : colored channel  (public only)
-                     %s : server
-                     default public format:  '$SETTINGS{format_public}'
-                     default private format: '$SETTINGS{format_private}'
+    away_only:              Collect hihlights only if you're away.
+                            default: '$SETTINGS{away_only}'
+    show_hilights           Enable/disable handling of public messages. ('on'/'off')
+                            default: :  '$SETTINGS{show_hilights}'
+    show_priv_msg           Enable/disable handling of private messages. ('on'/'off')
+                            default: :  '$SETTINGS{show_priv_msg}'
+    show_priv_server_msg    Enable/disable handling of private server messages. ('on'/'off')
+                            default: :  '$SETTINGS{show_priv_server_msg}'
+    format_public :         Format-string for public hilights.
+    format_private:         Format-string for private hilights.
+
+    Format-string:          %n : nick,    %N : colored nick
+                            %c : channel, %C : colored channel  (public only)
+                            %s : server
+                            default public format:  '$SETTINGS{format_public}'
+                            default private format: '$SETTINGS{format_private}'
+
+    debug:                  Show some debug/warning messages on failture. ('on'/'off').
+                            default: '$SETTINGS{debug}'
 
  *** The buffer '[perl] $SETTINGS{buffer_name}' can't be closed, it will be recreated immediatly.
  *** To get rid of the buffer, just unload $SCRIPT
@@ -258,17 +283,35 @@ sub hilights_public {
         }
 
         my $btype = weechat::buffer_get_string( $bufferp, "localvar_type" );
-        my ( $server, $channel, $fmt ) = ( '', '', undef );
+        my ( $server, $channel, $fmt ) = (
+            weechat::buffer_get_string( $bufferp, "localvar_server" ),
+            weechat::buffer_get_string( $bufferp, "localvar_channel" ),
+            undef
+        );
 
         if ( $btype eq 'channel' ) {
-            $server  = weechat::buffer_get_string( $bufferp, "localvar_server" );
-            $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" );
-            $fmt     = weechat::config_get_plugin('format_public');
+            $fmt = weechat::config_get_plugin('format_public');
         } elsif ( $btype eq 'private' ) {
-            $server = weechat::buffer_get_string( $bufferp, "localvar_server" );
-            $fmt = weechat::config_get_plugin('format_private');
+            $channel = '';
+            $fmt     = weechat::config_get_plugin('format_private');
+
+        } elsif ( $btype eq 'server' ) {
+            if ( weechat::config_get_plugin('show_priv_server_msg') eq 'on' ) {
+                #TODO check for #channel == $server FIXME needed?
+                $fmt     = '%N%c';
+                $nick    = $server;
+                $channel = weechat::color('magenta') . "[SERVER-MSG]";
+            }
         } else { # FIXME
-            weechat::print('', "ERROR hilights_public nothing done for localvar_type: '$btype'");
+            if ( weechat::config_get_plugin('debug') eq 'on' ) {
+                $server  = weechat::buffer_get_string( $bufferp, "localvar_server" ) || 'UNDEF';
+                $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" ) || 'UNDEF';
+                $btype ||= 'UNDEF';
+                weechat::print('', "$SCRIPT: WARNING: hilights_public: nothing done for localvar_type: '$btype'");
+                weechat::print('', "$SCRIPT:          * message came form nick:    '$nick'");
+                weechat::print('', "$SCRIPT:          * message came form server:  '$server'");
+                weechat::print('', "$SCRIPT:          * message came form channel: '$channel'");
+            }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
     }
