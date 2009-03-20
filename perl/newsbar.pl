@@ -30,10 +30,10 @@
 #  bar.
 #
 #  Simmple commands:
-#  /newsbar always       enable highlights to buffer always.
-#  /newsbar away_only    enable highlights to buffer if away only
-#  /newsbar clear        clears the buffer
-#  /newsbar memo [text]  writes text into the script's buffer
+#  /newsbar always       enable highlights to bar always.
+#  /newsbar away_only    enable highlights to bar if away only
+#  /newsbar clear        clears the bar
+#  /newsbar memo [text]  writes text into the script's bar
 #
 # Configuration:
 #
