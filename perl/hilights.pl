@@ -52,6 +52,7 @@
 #                          %n : nick,    %N : colored nick
 #                          %c : channel, %C : colored channel
 #                          %s : server
+#   close_buffer_on_unload Close the buffer when script will be unloaded. 
 #   debug:                 Show some debug/warning messages on failture
 #
 # -----------------------------------------------------------------------------
@@ -131,14 +132,15 @@ my $Version = 0.05;
 #
 # script default options
 my %SETTINGS = (
-    "buffer_name"          => "hilights",
-    "show_hilights"        => "on",
-    "away_only"            => "off",
-    "format_public"        => '%N.%C@%s',
-    "show_priv_msg"        => "on",
-    "format_private"       => '%N@%s',
-    "show_priv_server_msg" => "on",
-    "debug"                => "on",
+    "buffer_name"            => "hilights",
+    "show_hilights"          => "on",
+    "away_only"              => "off",
+    "format_public"          => '%N.%C@%s',
+    "show_priv_msg"          => "on",
+    "format_private"         => '%N@%s',
+    "show_priv_server_msg"   => "on",
+    "close_buffer_on_unload" => "off",
+    "debug"                  => "on",
 );
 
 my $SCRIPT      = "hilights";
@@ -175,6 +177,7 @@ Config settings:
                             default public format:  '$SETTINGS{format_public}'
                             default private format: '$SETTINGS{format_private}'
 
+    close_buffer_on_unload  Close the buffer when script will be unloaded. 
     debug:                  Show some debug/warning messages on failture. ('on'/'off').
                             default: '$SETTINGS{debug}'
 
@@ -428,8 +431,7 @@ sub unload {
     my $buffer_out = weechat::config_get_plugin('buffer_name');
     my $bp = weechat::buffer_search( "perl", $buffer_out );
 
-    if ($bp) {
-    system("beep");
+    if ($bp and weechat::config_get_plugin('close_buffer_on_unload') eq 'on') {
         # FIXME doesn't work, so simply set $Buffer to a wrong val
         #weechat::unhook( 'hilights_buffer_closed' );
         $Buffer = 0;
