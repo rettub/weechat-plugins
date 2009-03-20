@@ -1,4 +1,7 @@
-This repository provides my personal plugin script for weechat.
+This repository provides my personal plugin scripts for weechat.
+
+- hilight.pl    writes highlights into a buffer
+- newsbar.pl    writes highlights into a bar
 
 Tons of thanks to FlashCode for his great IRC client weechat.
 
