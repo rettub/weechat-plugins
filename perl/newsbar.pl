@@ -1,70 +1,62 @@
-#
-# hilights for weechat version 0.2.7 or later
-#
-# (perl version by rettub@gmx.net, just to play with weechat and perl)
-#
-#  Listens for hilights and sends them to a hilight buffer.
-#
 # -----------------------------------------------------------------------------
 #
-# This program is free software. It comes without any warranty, to
-# the extent permitted by applicable law. You can redistribute it
-# and/or modify it under the terms of the Do What The Fuck You Want
-# To Public License, Version 2, as published by Sam Hocevar. See
-# http://sam.zoy.org/wtfpl/COPYING for more details.
-#
-#
-#             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#                    Version 2, December 2004
-#
-# Copyright (C) 2004 Sam Hocevar
-#  14 rue de Plaisance, 75014 Paris, France
-# Everyone is permitted to copy and distribute verbatim or modified
-# copies of this license document, and changing it is allowed as long
-# as the name is changed.
-#
-#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#
-#  0. You just DO WHAT THE FUCK YOU WANT TO.
+# TONS OF THANKS TO FlashCode FOR HIS IRC CLIENT AND HIS SUPPORT ON #weechat
 #
 # -----------------------------------------------------------------------------
+# Copyright (c) 2009 by rettub <rettub@gmx.net>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# newsbar for weechat version 0.2.7 or later
+#
+# Listens for highlights and sends them to a bar.
+#
 #
 # Usage:
 #
-#  Simply load the script, and all hilights in all channels will be sent to a
-#  single hilight buffer.
+#  Simply load the script, and all highlights in all channels will be sent to a
+#  bar.
 #
 #  Simmple commands:
-#  /hilights always       enable hilights to buffer always.
-#  /hilights away_only    enable hilights to buffer if away only
-#  /hilights clear        clears the buffer
-#  /hilights memo [text]  writes text into the script's buffer
+#  /newsbar always       enable highlights to buffer always.
+#  /newsbar away_only    enable highlights to buffer if away only
+#  /newsbar clear        clears the buffer
+#  /newsbar memo [text]  writes text into the script's buffer
 #
 # Configuration:
 #
 #  away_only:              collect hihlights only if away isn't set
-#  show_hilights           Enable/disable handling of public messages
+#  show_highlights         Enable/disable handling of public messages
 #  show_priv_msg           Enable/disable handling of private messages
 #  show_priv_server_msg    Enable/disable handling of private server messages
-#  format_public :         format-string for public hilights
-#  format_private:         format-string for private hilights
+#  format_public :         format-string for public highlights
+#  format_private:         format-string for private highlights
 #                          %n : nick,    %N : colored nick
 #                          %c : channel, %C : colored channel
 #                          %s : server
-#   close_buffer_on_unload Close the buffer when script will be unloaded. 
-#   debug:                 Show some debug/warning messages on failture
+#  remove_bar_on_unload    Remove bar when script will be unloaded. 
+#  bar_hidden_on_start     Start with a hidden bar.
+#  bar_visible_lines       lines visible if bar is shown.
+#
+#  debug:                  Show some debug/warning messages on failture
 #
 # -----------------------------------------------------------------------------
 #
 # Bugs? Would be surprised if not, please tell me!
 #
 # -----------------------------------------------------------------------------
-# TODO Switch back and forth current/'not seen hilighted' buffer
-#      Use a local_var to sign buffer with new hilights
-#      similar to 'jump_smart'a for unread
-# TODO Autoswitch hilight-buffer with buffer of top window if there are splitted
-#      windows in the current layout and buffer with new highlight not visible
 # TODO Optional execute an external user cmd with args:
 #        nick, channel, server, message, ... (date/time?)
 #      Or write a special script for it.
@@ -72,104 +64,81 @@
 #      (I use festival for it)
 # TODO exclude nicks, channels, servers, ... by eg. user defined whitelists
 #      and/or blacklists
-# TODO config option to en/disable the logger for hilight buffer
-#
+# TODO newsbeuter
 # -----------------------------------------------------------------------------
 #
 # Changelog:
 #
-# Version 0.05 2009-03-17
-#   - new option 'show_priv_server_msg' value: 'on'/'off'
-#     enables/disables handling of private server messages
-#   - new option 'debug' value: 'on'/'off'
-#     enables/disables debug messages on failture
-#   - FIX: added some missing commands, options to Usage/Configuration in comments
-#
-# Version 0.04, 15 Mar, 2009
-#   - renamed cmd arg 'on_away' to 'away_only'
-#
-# Version 0.03, 15 Mar, 2009
-#   - Don't clash with Sharn's python script anymore
-#     renamed hilightbuffer.pl -> hilights.pl
-#     renamed cmd /hilightbuffer to /hilights
-#     renamed default buffername to "hilights"
-#     XXX If you don't use hilightbuffer.pl anymore,
-#         please remove old config vars manually
-#           plugins.var.perl.hilightbuffer.*
-#   - FIX: use of buffer localvar_type to check for private/public hihilghts
-#   - FIX: check return val of weechat::register()
-#   - added config option to listen if away only
-#     new config option: 'away_only'
-#     new cmd args: always, away_only
-#     Check if value for 'away_only' is one of 'on,'off' when changed
-#     and on startup. Fall back to 'off'.
-#   - config option 'format_private' for user formatted output
-#   - color nick prefixes @,+,^ with extra colors
-#
-# Version 0.02, 11 Mar, 2009
-#   - FIX: ignore server 'private' messages
-#   - config option 'format_public' for user formatted output
-#   - new script commands: clear, memo
-#   - add hooks first, then initialize
-#   - get max number of nick-colors from weechat config
-#   - notification_* config vars removed
-#   - get color names for nicks)from current weechat config
-#   - removed unneeded vars
-#
-# Version 0.1, 01 Mar, 2009
-#   - added some color output, removed external notify
-#   - ported original python version of Brandon Hartshorn (Sharn) into perl
+# Version 0.01 2009-03-20
+#   - hilights.pl partly rewritten and renamed it to newsbar.pl
+#     (use a bar instead of a buffer)
+#     newest version available at:
+#     git://github.com/rettub/weechat-plugins.git
+#   - based on an idea of Brandon Hartshorn (Sharn) to write highlights into an
+#     extra buffer
 #     Original script:
 #     http: http://github.com/sharn/weechat-scripts/tree/master
 #     git:  git://github.com/sharn/weechat-scripts.git
 
+use Data::Dumper;
+use Text::Wrap;
+use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.05;
+my $Version = 0.01;
 
 # constants
 #
 # script default options
 my %SETTINGS = (
-    "buffer_name"            => "hilights",
-    "show_hilights"          => "on",
+    "bar_name"               => "newsbar",
+    "show_highlights"        => "on",
     "away_only"              => "off",
     "format_public"          => '%N.%C@%s',
     "show_priv_msg"          => "on",
     "format_private"         => '%N@%s',
     "show_priv_server_msg"   => "on",
-    "close_buffer_on_unload" => "off",
+    "remove_bar_on_unload"   => "on",
+    "bar_hidden_on_start"    => "1",
+    "bar_visible_lines"      => "4",
     "debug"                  => "on",
 );
 
-my $SCRIPT      = "hilights";
+my $SCRIPT      = "newsbar";
 my $AUTHOR      = "rettub";
-my $LICENCE     = "WTFPL";
-my $DESCRIPTION = "Listens for hilights on all your channels and writes them to common buffer '$SETTINGS{buffer_name}'";
-my $COMMAND     = "hilights";             # new command name
-my $ARGS_HELP   = "<always> | <away_only> | <clear> | <memo [text]>";
+my $LICENCE     = "GPL3";
+my $DESCRIPTION = "Listens for news (highlights on all your channels) and writes them into bar 'NewsBar'";
+my $COMMAND     = "newsbar";             # new command name
+my $ARGS_HELP   = "<always> | <away_only> | <clear> | <memo [text]> | <toggle> | <hide> | <show> | <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
 
-    always:       enable hilights to buffer always       (sets 'away_only' = off).
-    away_only:    enable hilights to buffer if away only (sets 'away_only' = on).
-    clear      :  Clear buffer '$SETTINGS{buffer_name}'.
-    memo [text]:  Print a memo into buffer '$SETTINGS{buffer_name}'.
+    always:       enable highlights to bar always       (sets 'away_only' = off).
+    away_only:    enable highlights to bar if away only (sets 'away_only' = on).
+    clear      :  Clear bar '$SETTINGS{bar_name}'.
+    memo [text]:  Print a memo into bar '$SETTINGS{bar_name}'.
                   If text is not given, an emty line will be printed.
+    toggle,
+    hide, show,
+    scroll_home,
+    scroll_end,
+    scroll_up,
+    scroll_down:  Simplify the use of eg. '/$SCRIPT scroll_down' instead of '/bar $SCRIPT scroll * yb',
+                  and simple use of key bindings.
 
 Config settings:
 
     away_only:              Collect hihlights only if you're away.
                             default: '$SETTINGS{away_only}'
-    show_hilights           Enable/disable handling of public messages. ('on'/'off')
-                            default: :  '$SETTINGS{show_hilights}'
+    show_highlights         Enable/disable handling of public messages. ('on'/'off')
+                            default: :  '$SETTINGS{show_highlights}'
     show_priv_msg           Enable/disable handling of private messages. ('on'/'off')
                             default: :  '$SETTINGS{show_priv_msg}'
     show_priv_server_msg    Enable/disable handling of private server messages. ('on'/'off')
                             default: :  '$SETTINGS{show_priv_server_msg}'
-    format_public :         Format-string for public hilights.
-    format_private:         Format-string for private hilights.
+    format_public :         Format-string for public highlights.
+    format_private:         Format-string for private highlights.
 
     Format-string:          %n : nick,    %N : colored nick
                             %c : channel, %C : colored channel  (public only)
@@ -177,20 +146,26 @@ Config settings:
                             default public format:  '$SETTINGS{format_public}'
                             default private format: '$SETTINGS{format_private}'
 
-    close_buffer_on_unload  Close the buffer when script will be unloaded. 
+    remove_bar_on_unload    Remove bar when script will be unloaded. 
+    bar_hidden_on_start     Start with a hidden bar ('1'/'0')
+                            default: :  '$SETTINGS{bar_hidden_on_start}'
+    bar_visible_lines       lines visible if bar is shown
+                            default: :  '$SETTINGS{bar_visible_lines}'
+
     debug:                  Show some debug/warning messages on failture. ('on'/'off').
                             default: '$SETTINGS{debug}'
 
- *** The buffer '[perl] $SETTINGS{buffer_name}' can't be closed, it will be recreated immediatly.
- *** To get rid of the buffer, just unload $SCRIPT
 EO_HELP
 
-my $COMPLETITION  = "always|away_only|clear|memo";
+my $COMPLETITION  =
+"always|away_only|clear|memo|toggle|hide|show|scroll_down|scroll_up|scroll_home|scroll_end";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
 # global vars
-my $Buffer;
+my $Bar;
+my @Bstr=();
+my $Baway="";
 
 # helper functions {{{
 # FIXME hardcoded max nick-color value to prevent a forever-loop in init_config()
@@ -253,6 +228,35 @@ sub _color_str {
     weechat::color($color_name) . $str  . weechat::color('default');
 }
 
+sub _bar_clear {
+    @Bstr = ();
+    weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
+}
+
+sub _date_time {
+    my $dt = strftime( weechat::config_string (weechat::config_get('weechat.look.buffer_time_format')), localtime);
+    # FIXME user config
+    my $tdelim = weechat::color ("yellow") . ":" . weechat::color ("default");
+    my $ddelim = weechat::color ("yellow") . "-" . weechat::color ("default");
+    $dt =~ s/:/$tdelim/g; 
+    $dt =~ s/-/$ddelim/g; 
+
+    return $dt;
+}
+
+sub _print_bar {
+    my $str = shift;
+    unshift(@Bstr , [_date_time() . " ",  $str]); # insert msg to top
+#    build_bar();
+    my $bar = weechat::bar_search( weechat::config_get_plugin('bar_name'));
+    if ( $bar) {
+        weechat::bar_set($bar, 'hidden', '0'); # XXX bar must be visible before bar_item_update() is called!
+        weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
+    } else {
+        DEBUG("_print_formatted(): ERROR, no bar");
+    }
+}
+
 sub _print_formatted {
     my ( $fmt, $message, @id ) = @_;
 
@@ -267,18 +271,18 @@ sub _print_formatted {
         $i++;
     }
 
-    weechat::print( $Buffer, $fmt . "\t" . $message );
+    _print_bar( $fmt . "\t" . $message); # insert msg to top
 }
 }
 # }}}
 
 # weechat stuff {{{
-# colored output of hilighted text to hilight buffer
-sub hilights_public {
+# colored output of hilighted text to bar
+sub highlights_public {
     my ( $bufferp, undef, undef, undef, $ishilight, $nick, $message ) = @_;
 
     if ( $ishilight == 1
-        and weechat::config_get_plugin('show_hilights') eq 'on' )
+        and weechat::config_get_plugin('show_highlights') eq 'on' )
     {
         if ( weechat::config_get_plugin('away_only') eq 'on' ) {
             return weechat::WEECHAT_RC_OK
@@ -310,7 +314,7 @@ sub hilights_public {
                 $server  = weechat::buffer_get_string( $bufferp, "localvar_server" ) || 'UNDEF';
                 $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" ) || 'UNDEF';
                 $btype ||= 'UNDEF';
-                weechat::print('', "$SCRIPT: WARNING: hilights_public: nothing done for localvar_type: '$btype'");
+                weechat::print('', "$SCRIPT: WARNING: highlights_public: nothing done for localvar_type: '$btype'");
                 weechat::print('', "$SCRIPT:          * message came form nick:    '$nick'");
                 weechat::print('', "$SCRIPT:          * message came form server:  '$server'");
                 weechat::print('', "$SCRIPT:          * message came form channel: '$channel'");
@@ -322,10 +326,10 @@ sub hilights_public {
     return weechat::WEECHAT_RC_OK;
 }
 
-# colored output of private messages to hilight buffer
-# server messages aren't shown in the hilight buffer
+# colored output of private messages to bar
+# server messages aren't shown in the bar
 # format: 'nick[privmsg] | message' (/msg)
-sub hilights_private {
+sub highlights_private {
     my ( $nick, $message ) = ( $_[1] =~ /(.*?)\t(.*)/ );
 
     my $fmt = '%N%c';
@@ -338,19 +342,31 @@ sub hilights_private {
     return weechat::WEECHAT_RC_OK;
 }
 
-sub hilights {
+sub newsbar {
 
     if ( $_[1] eq 'clear' ) {
-        weechat::buffer_clear($Buffer);
+        _bar_clear();
     } elsif ( $_[1] eq 'always' ) {
             weechat::config_set_plugin( 'away_only', 'off' );
     } elsif ( $_[1] eq 'away_only' ) {
             weechat::config_set_plugin( 'away_only', 'on' );
+    } elsif ( $_[1] eq 'show' or $_[1] eq 'hide' or $_[1] eq 'toggle' ) {
+            weechat::command('', "/bar $_[1] " . weechat::config_get_plugin('bar_name') );
+    } elsif ( $_[1] eq 'scroll_home' ) {
+            weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * yb" );
+    } elsif ( $_[1] eq 'scroll_end' ) {
+            weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * ye" );
+    } elsif ( $_[1] eq 'scroll_up' ) {
+            weechat::command('', "/bar scroll " .
+                weechat::config_get_plugin('bar_name') . " * y-" . weechat::config_get_plugin('bar_visible_lines'));
+    } elsif ( $_[1] eq 'scroll_down' ) {
+            weechat::command('', "/bar scroll " .
+                weechat::config_get_plugin('bar_name') . " * y+" . weechat::config_get_plugin('bar_visible_lines'));
     } else {
         my ( $cmd, $arg ) = ( $_[1] =~ /(.*?)\s+(.*)/ );
         $cmd = $_[1] unless $cmd;
         if ( $cmd eq 'memo' ) {
-            weechat::print( $Buffer,
+            _print_bar( 
                 weechat::color('yellow') . "[memo]" . "\t" . (defined $arg ? $arg : ''));
         }
     }
@@ -367,12 +383,12 @@ sub init_config {
     }
 }
 
-sub hilights_config_changed {
+sub highlights_config_changed {
     my $option = shift;
     my $value = shift;
 
     if ( $value eq 'on' ) {
-        weechat::buffer_set ($Buffer, "title", "$SCRIPT: [active: IF AWAY]");
+        $Baway = "IF AWAY";
     } else {
         if( $value ne 'off' ) {
             weechat::print('',  weechat::color('lightred') . "=!=\t" . "$SCRIPT: "
@@ -386,61 +402,111 @@ sub hilights_config_changed {
             );
 
             # FIXME unhook/rehook needed?
-            weechat::unhook( 'hilights_config_changed' );
+            weechat::unhook( 'highlights_config_changed' );
             weechat::config_set_plugin( 'away_only', 'off' );
-            weechat::hook_config( $option, 'hilights_config_changed' );
+            weechat::hook_config( $option, 'highlights_config_changed' );
         }
-        weechat::buffer_set ($Buffer, "title", "$SCRIPT: [active: ALWAYS]");
+        $Baway = "ALWAYS";
     }
 
     return weechat::WEECHAT_RC_OK;
 }
 
-# Make new buffer for hilights if needed
-sub init_buffer {
-    my $buffer_out = weechat::config_get_plugin('buffer_name');
-    my $bn = weechat::buffer_search( "perl", $buffer_out );
+# Make new bar if needed
+sub init_bar {
+    my $bbar = weechat::config_get_plugin('bar_name');
 
-    if ($bn) {
-        $Buffer = $bn;
-    } else {
-        weechat::buffer_new( $buffer_out, "", "" );
-        $Buffer = weechat::buffer_search( "perl", $buffer_out );
+    unless (defined $Bar) {
+        highlights_config_changed(
+            "plugins.var.perl." . $SCRIPT . ".on_away",
+            weechat::config_get_plugin('away_only')
+        );
+        weechat::bar_item_new(  weechat::config_get_plugin('bar_name'), "build_bar" );
+        weechat::bar_new(
+            weechat::config_get_plugin('bar_name'),
+            weechat::config_get_plugin('bar_hidden_on_start'),
+            "0",                                    "root",
+            "",                                     "top",
+            "vertical",                             "vertical",
+            "0",
+            weechat::config_get_plugin('bar_visible_lines'),
+            "default",                              "default",
+            "default",                              "on",
+            weechat::config_get_plugin('bar_name')
+        );
     }
-
-    my $value = weechat::config_get_plugin('away_only');
-    if ( $value eq 'on' ) {
-        weechat::buffer_set( $Buffer, "title", "$SCRIPT: [active: IF AWAY]" );
-    } else {
-        if ( $value ne 'off' ) {
-            weechat::config_set_plugin( 'away_only', 'off' );
-        }
-        weechat::buffer_set( $Buffer, "title", "$SCRIPT: [active: ALWAYS]" );
-    }
-}
-
-# don't crash weechat if hilight buffer was closed
-# FIXME make a cmd like stop/start cause buffer for hilights can't be deactivated
-sub hilights_buffer_closed {
-    init_buffer() if $_[1] eq $Buffer;
-
-    return weechat::WEECHAT_RC_OK;
+    weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
 }
 
 sub unload {
-    my $buffer_out = weechat::config_get_plugin('buffer_name');
-    my $bp = weechat::buffer_search( "perl", $buffer_out );
+    $Bar = weechat::bar_search( weechat::config_get_plugin('bar_name') );
 
-    if ($bp and weechat::config_get_plugin('close_buffer_on_unload') eq 'on') {
-        # FIXME doesn't work, so simply set $Buffer to a wrong val
-        #weechat::unhook( 'hilights_buffer_closed' );
-        $Buffer = 0;
-        weechat::buffer_close($bp);
+    if ($Bar and weechat::config_get_plugin('remove_bar_on_unload') eq 'on') {
+        weechat::bar_remove($Bar);
     }
 
     return weechat::WEECHAT_RC_OK;
 }
 # }}}
+
+sub build_bar_title {
+    my $i = shift;
+
+    # FIXME user config
+    my $title = weechat::color (",blue") .  "NewsBar: [%I] [active: %A | most recent: first]";
+
+    $i ||= 0;
+
+    $title =~ s/%A/$Baway/;
+    $title =~ s/%I/$i/;
+
+    return $title;
+}
+
+sub build_bar {
+    my $str ="";
+    my @f;
+    my $i=0;
+    my $len=0;
+    my $plen=0;
+    my $plen_c=0;
+
+    foreach (@Bstr) {
+        ($f[$i][0], $f[$i][1])=split(/\t/, $_->[1]);
+
+        $f[$i][4] = $_->[0];
+        $f[$i][5]= (($f[$i][4] =~ tr///) * 4); # XXX ^Y must be literal ctrl-v,ctrl-Y
+        $plen_c = length($f[$i][4]) -  $f[$i][5];
+        $plen = $plen_c > $plen ? $plen_c : $plen;
+
+        my $l1 = length($f[$i][0]) ;
+        $f[$i][2]= (($f[$i][0] =~ tr///) * 4); # XXX ^Y must be literal ctrl-v,ctrl-Y
+        my $l = length($f[$i][0]) - $f[$i][2];
+        $len = $l > $len ? $l : $len;
+        $i++;
+    }
+
+    # FIXME use user config color
+    my $delim = weechat::color ("green") . "|" . weechat::color ("default");
+
+    # FIXME use columns (width in chars) of bar if possible
+    $Text::Wrap::columns = `tput cols` - $len - 3;
+    foreach (@f) {
+        if ( length(@$_[1]) > $Text::Wrap::columns ) {
+            my @a = split( /\n/, wrap( '', '', @$_[1] ) );
+            $str .= sprintf( "%*s%*s %s %s\n", $plen + @$_[5], @$_[4], $len  + @$_[2], @$_[0], $delim, shift @a );
+            foreach (@a) {
+                $str .= sprintf( "%*s%*s %s %s\n", $plen, " ", $len, " ", $delim, $_ );
+            }
+        } else {
+            $str .= sprintf( "%*s%*s %s %s\n", $plen + @$_[5],@$_[4], $len + @$_[2], @$_[0], $delim, @$_[1] );
+        }
+    }
+
+    $str = build_bar_title($i) . "\n" . $str;
+
+    return $str;
+}
 
 # ------------------------------------------------------------------------------
 # here we go...
@@ -451,13 +517,12 @@ sub unload {
 if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "unload", "" ) ) {
 
     weechat::hook_command( $COMMAND,  $DESCRIPTION,  $ARGS_HELP, $CMD_HELP, $COMPLETITION, $CALLBACK );
-    weechat::hook_print( "", "", "", 1, "hilights_public" );
-    weechat::hook_signal( "weechat_pv",    "hilights_private" );
-    weechat::hook_signal( "buffer_closed", "hilights_buffer_closed" );
+    weechat::hook_print( "", "", "", 1, "highlights_public" );
+    weechat::hook_signal( "weechat_pv",    "highlights_private" );
 
     init_config();
-    init_buffer();
-    weechat::hook_config( "plugins.var.perl.hilights.on_away", 'hilights_config_changed' );
+    init_bar();
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".on_away", 'highlights_config_changed' );
 }
 
 # vim: ai ts=4 sts=4 et sw=4 foldmethod=marker :
