@@ -29,11 +29,11 @@
 #  Simply load the script, and all highlights in all channels will be sent to a
 #  bar.
 #
-#  Simmple commands:
-#  /newsbar always       enable highlights to bar always.
-#  /newsbar away_only    enable highlights to bar if away only
-#  /newsbar clear        clears the bar
-#  /newsbar memo [text]  writes text into the script's bar
+#  Simple commands:
+#  /newsbar always         enable highlights to bar always.
+#  /newsbar away_only      enable highlights to bar if away only
+#  /newsbar clear [regexp] clears the bar optional with perl regexp
+#  /newsbar memo [text]    writes text into the script's bar
 #
 # Configuration:
 #
@@ -46,9 +46,12 @@
 #                          %n : nick,    %N : colored nick
 #                          %c : channel, %C : colored channel
 #                          %s : server
+#  memo_tag_color          Color of '[memo]'
 #  remove_bar_on_unload    Remove bar when script will be unloaded. 
+#  bar_auto_hide           Hide bar if empty.
 #  bar_hidden_on_start     Start with a hidden bar.
 #  bar_visible_lines       lines visible if bar is shown.
+#  bar_seperator           Show bar separator line.
 #
 #  debug:                  Show some debug/warning messages on failture
 #
@@ -100,8 +103,11 @@ my %SETTINGS = (
     "format_private"         => '%N@%s',
     "show_priv_server_msg"   => "on",
     "remove_bar_on_unload"   => "on",
+    "memo_tag_color"         => 'yellow',
     "bar_hidden_on_start"    => "1",
+    "bar_auto_hide"          => "on",
     "bar_visible_lines"      => "4",
+    "bar_seperator"          => "off",
     "debug"                  => "on",
 );
 
@@ -110,21 +116,22 @@ my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
 my $DESCRIPTION = "Listens for news (highlights on all your channels) and writes them into bar 'NewsBar'";
 my $COMMAND     = "newsbar";             # new command name
-my $ARGS_HELP   = "<always> | <away_only> | <clear> | <memo [text]> | <toggle> | <hide> | <show> | <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
+my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]> | <memo [text]> | <toggle> | <hide> | <show> | <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
 
-    always:       enable highlights to bar always       (sets 'away_only' = off).
-    away_only:    enable highlights to bar if away only (sets 'away_only' = on).
-    clear      :  Clear bar '$SETTINGS{bar_name}'.
-    memo [text]:  Print a memo into bar '$SETTINGS{bar_name}'.
-                  If text is not given, an emty line will be printed.
+    always:         enable highlights to bar always       (sets 'away_only' = off).
+    away_only:      enable highlights to bar if away only (sets 'away_only' = on).
+    clear [regexp]: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
+                    If a perl regular expression is given, clear matched lines only.
+    memo [text]:    Print a memo into bar '$SETTINGS{bar_name}'.
+                    If text is not given, an emty line will be printed.
     toggle,
     hide, show,
     scroll_home,
     scroll_end,
     scroll_up,
-    scroll_down:  Simplify the use of eg. '/$SCRIPT scroll_down' instead of '/bar $SCRIPT scroll * yb',
+    scroll_down:  Simplify the use of eg. '/$SCRIPT scroll_end' instead of '/bar $SCRIPT scroll * ye',
                   and simple use of key bindings.
 
 Config settings:
@@ -132,11 +139,11 @@ Config settings:
     away_only:              Collect hihlights only if you're away.
                             default: '$SETTINGS{away_only}'
     show_highlights         Enable/disable handling of public messages. ('on'/'off')
-                            default: :  '$SETTINGS{show_highlights}'
+                            default: '$SETTINGS{show_highlights}'
     show_priv_msg           Enable/disable handling of private messages. ('on'/'off')
-                            default: :  '$SETTINGS{show_priv_msg}'
+                            default: '$SETTINGS{show_priv_msg}'
     show_priv_server_msg    Enable/disable handling of private server messages. ('on'/'off')
-                            default: :  '$SETTINGS{show_priv_server_msg}'
+                            default: '$SETTINGS{show_priv_server_msg}'
     format_public :         Format-string for public highlights.
     format_private:         Format-string for private highlights.
 
@@ -146,11 +153,17 @@ Config settings:
                             default public format:  '$SETTINGS{format_public}'
                             default private format: '$SETTINGS{format_private}'
 
+    memo_tag_color          Color of '[memo]' e.g.: 'black,cyan' fg: black, bg: cyan
+                            default: '$SETTINGS{memo_tag_color}'
     remove_bar_on_unload    Remove bar when script will be unloaded. 
+    bar_auto_hide           Hide bar if empty ('on'/'off')
+                            default: '$SETTINGS{bar_auto_hide}'
     bar_hidden_on_start     Start with a hidden bar ('1'/'0')
-                            default: :  '$SETTINGS{bar_hidden_on_start}'
+                            default: '$SETTINGS{bar_hidden_on_start}'
     bar_visible_lines       lines visible if bar is shown
-                            default: :  '$SETTINGS{bar_visible_lines}'
+                            default: '$SETTINGS{bar_visible_lines}'
+    bar_seperator           Show bar separator line ('on'/'off')
+                            default: '$SETTINGS{bar_seperator}'
 
     debug:                  Show some debug/warning messages on failture. ('on'/'off').
                             default: '$SETTINGS{debug}'
@@ -173,6 +186,8 @@ my $Baway="";
 {
 my $_Ncol    = undef;
 my $_MIN_COL = 10;
+
+sub DEBUG {weechat::print('', "***\t" . $_[0]);}
 
 sub _init_max_colors {
     if ( !defined $_Ncol ) {
@@ -229,8 +244,15 @@ sub _color_str {
 }
 
 sub _bar_clear {
-    @Bstr = ();
-    weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
+    my $arg = shift;
+
+    return unless @Bstr;
+
+    @Bstr = $arg ? grep { not $_->[1] =~ /$arg/} @Bstr : @Bstr;
+
+    weechat::bar_item_update(weechat::config_get_plugin('bar_name'));
+    weechat::command('', "/bar hide " . weechat::config_get_plugin('bar_name'))
+        if weechat::config_get_plugin('bar_auto_hide') eq 'on' and not @Bstr;
 }
 
 sub _date_time {
@@ -344,9 +366,7 @@ sub highlights_private {
 
 sub newsbar {
 
-    if ( $_[1] eq 'clear' ) {
-        _bar_clear();
-    } elsif ( $_[1] eq 'always' ) {
+    if ( $_[1] eq 'always' ) {
             weechat::config_set_plugin( 'away_only', 'off' );
     } elsif ( $_[1] eq 'away_only' ) {
             weechat::config_set_plugin( 'away_only', 'on' );
@@ -366,8 +386,13 @@ sub newsbar {
         my ( $cmd, $arg ) = ( $_[1] =~ /(.*?)\s+(.*)/ );
         $cmd = $_[1] unless $cmd;
         if ( $cmd eq 'memo' ) {
-            _print_bar( 
-                weechat::color('yellow') . "[memo]" . "\t" . (defined $arg ? $arg : ''));
+            _print_bar(
+                weechat::color( weechat::config_get_plugin('memo_tag_color') )
+                  . "[memo]"
+                  . weechat::color('default,default') . "\t"
+                  . ( defined $arg ? $arg : '' ) );
+        } elsif ( $cmd eq 'clear' ) {
+            _bar_clear($arg);
         }
     }
 
@@ -425,13 +450,14 @@ sub init_bar {
         weechat::bar_new(
             weechat::config_get_plugin('bar_name'),
             weechat::config_get_plugin('bar_hidden_on_start'),
-            "0",                                    "root",
+            "100",                                  "root",
             "",                                     "top",
             "vertical",                             "vertical",
             "0",
             weechat::config_get_plugin('bar_visible_lines'),
             "default",                              "default",
-            "default",                              "on",
+            "default",
+            weechat::config_get_plugin('bar_seperator'),
             weechat::config_get_plugin('bar_name')
         );
     }
