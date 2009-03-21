@@ -248,7 +248,7 @@ sub _bar_clear {
 
     return unless @Bstr;
 
-    @Bstr = $arg ? grep { not $_->[1] =~ /$arg/} @Bstr : @Bstr;
+    @Bstr = $arg ? grep { not $_->[1] =~ /$arg/} @Bstr : ();
 
     weechat::bar_item_update(weechat::config_get_plugin('bar_name'));
     weechat::command('', "/bar hide " . weechat::config_get_plugin('bar_name'))
