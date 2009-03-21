@@ -516,7 +516,7 @@ sub build_bar {
     my $delim = weechat::color ("green") . "|" . weechat::color ("default");
 
     # FIXME use columns (width in chars) of bar if possible
-    $Text::Wrap::columns = `tput cols` - $len - 3;
+    $Text::Wrap::columns = `tput cols` - $len - 7;
     foreach (@f) {
         if ( length(@$_[1]) > $Text::Wrap::columns ) {
             my @a = split( /\n/, wrap( '', '', @$_[1] ) );
