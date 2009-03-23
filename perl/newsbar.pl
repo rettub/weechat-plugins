@@ -56,8 +56,11 @@
 #  debug:                  Show some debug/warning messages on failture
 #
 # -----------------------------------------------------------------------------
-#
-# Bugs? Would be surprised if not, please tell me!
+# XXX Known bugs:
+#     Bar must be redrawed if terminal size has changed (wrapping)
+#     Wrapping starts to early if some locale/utf chars contained in message string
+# 
+# More bugs? Would be surprised if not, please tell me!
 #
 # -----------------------------------------------------------------------------
 # TODO Optional execute an external user cmd with args:
@@ -489,43 +492,66 @@ sub build_bar_title {
     return $title;
 }
 
+use constant {
+    TIME     => 0,
+    TIME_CCL => 1,    #    NICK_COLOR_CODE_LEN
+    NICK     => 2,
+    NICK_CCL => 3,    #    NICK_COLOR_CODE_LEN
+    MSG      => 4,
+};
+
+# FIXME use columns (width in chars) of bar if possible
+sub _terminal_columns { my $c = `tput cols`; chomp $c; return $c; }
+
+# color codes starting with ctrl-Y[FB\*] (gui-color.h)
+sub _colorcodes_len {
+    my $str = shift;
+
+    # XXX ^Y must be literal ctrl-v,ctrl-Y
+    my $COLOR_CODE      = "[FB][0-9a-fA-F]{2,2}";
+    my $COLOR_CODE_FGBG = "\*[0-9a-fA-F]{2,2},[0-9a-fA-F]{2,2}";
+
+    return ((scalar (() = $str =~ /$COLOR_CODE/g) * 4) + (scalar (() = $str =~ /$COLOR_CODE_FGBG/g) * 7));
+}
+
 sub build_bar {
-    my $str ="";
+    my $str = "";
     my @f;
-    my $i=0;
-    my $len=0;
-    my $plen=0;
-    my $plen_c=0;
+    my $i        = 0;
+    my $nlen_max = 0;
+    my $tlen_max = 0;    # max lenght of date/time
 
+    # get lengths
     foreach (@Bstr) {
-        ($f[$i][0], $f[$i][1])=split(/\t/, $_->[1]);
+        ($f[$i][NICK], $f[$i][MSG]) = split(/\t/, $_->[1]);
+        $f[$i][TIME]                = $_->[0];                          # [date ] time
 
-        $f[$i][4] = $_->[0];
-        $f[$i][5]= (($f[$i][4] =~ tr///) * 4); # XXX ^Y must be literal ctrl-v,ctrl-Y
-        $plen_c = length($f[$i][4]) -  $f[$i][5];
-        $plen = $plen_c > $plen ? $plen_c : $plen;
+        $f[$i][TIME_CCL] = _colorcodes_len($f[$i][TIME]);               # length of color codes
+        my $tlen_c       = length($f[$i][TIME]) -  $f[$i][TIME_CCL];    # length without color codes
+        $tlen_max        = $tlen_c if $tlen_c > $tlen_max;              # new max length
 
-        my $l1 = length($f[$i][0]) ;
-        $f[$i][2]= (($f[$i][0] =~ tr///) * 4); # XXX ^Y must be literal ctrl-v,ctrl-Y
-        my $l = length($f[$i][0]) - $f[$i][2];
-        $len = $l > $len ? $l : $len;
+        $f[$i][NICK_CCL] = _colorcodes_len($f[$i][NICK]);
+        my $nlen_c       = length($f[$i][NICK]) - $f[$i][NICK_CCL];
+        $nlen_max        = $nlen_c if $nlen_c > $nlen_max;
         $i++;
     }
 
     # FIXME use user config color
-    my $delim = weechat::color ("green") . "|" . weechat::color ("default");
+    my $delim     = weechat::color ("green") . " | " . weechat::color ("default");
+    my $delim_len = _colorcodes_len( $delim );
 
-    # FIXME use columns (width in chars) of bar if possible
-    $Text::Wrap::columns = `tput cols` - $len - 7;
+    $Text::Wrap::columns  = _terminal_columns() - ($nlen_max + $tlen_max + 3); # 3 := length of delim without color codes
+    $Text::Wrap::unexpand = 0;   # don't turn spaces into tabs
+
     foreach (@f) {
-        if ( length(@$_[1]) > $Text::Wrap::columns ) {
-            my @a = split( /\n/, wrap( '', '', @$_[1] ) );
-            $str .= sprintf( "%*s%*s %s %s\n", $plen + @$_[5], @$_[4], $len  + @$_[2], @$_[0], $delim, shift @a );
+        if ( length(@$_[MSG]) > $Text::Wrap::columns ) {
+            my @a = split( /\n/, wrap( '', '', @$_[MSG] ) );
+            $str .= sprintf( "%*s%*s$delim%s\n", $tlen_max, @$_[TIME], $nlen_max  + @$_[NICK_CCL], @$_[NICK], shift @a );
             foreach (@a) {
-                $str .= sprintf( "%*s%*s %s %s\n", $plen, " ", $len, " ", $delim, $_ );
+                $str .= sprintf( "%*s%*s$delim%s\n", $tlen_max, " ", $nlen_max , " ", $_ );
             }
         } else {
-            $str .= sprintf( "%*s%*s %s %s\n", $plen + @$_[5],@$_[4], $len + @$_[2], @$_[0], $delim, @$_[1] );
+            $str .= sprintf( "%*s%*s$delim%s\n", $tlen_max, @$_[TIME], $nlen_max + @$_[NICK_CCL], @$_[NICK], @$_[MSG] );
         }
     }
 
