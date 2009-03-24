@@ -34,6 +34,7 @@
 #  /newsbar away_only      enable highlights to bar if away only
 #  /newsbar clear [regexp] clears the bar optional with perl regexp
 #  /newsbar memo [text]    writes text into the script's bar
+#  /newsbar add text       text formatted the script's bar
 #
 # Configuration:
 #
@@ -121,7 +122,10 @@ my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
 my $DESCRIPTION = "Listens for news (highlights on all your channels) and writes them into bar 'NewsBar'";
 my $COMMAND     = "newsbar";             # new command name
-my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]> | <memo [text]> | <toggle> | <hide> | <show> | <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
+my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]>"
+                 ."| <memo [text]> | <add [--color color] text>"
+                 ."| <toggle> | <hide> | <show>"
+                 ."| <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
 
@@ -131,6 +135,21 @@ Arguments:
                     If a perl regular expression is given, clear matched lines only.
     memo [text]:    Print a memo into bar '$SETTINGS{bar_name}'.
                     If text is not given, an emty line will be printed.
+
+    add [--color color] message:
+                    Print a message into bar '$SETTINGS{bar_name}'.
+                    Useful to display text printed into the FIFO pipe of WeeChat.
+                    Text given before an optional tab will be printed left to the
+                    delemeter, all other text will be printed right to the
+                    delemeter. If --color weechat-color-name is given text
+                    infront of a tab will be colored.
+                    The best way to use this command is in a script called by e.g.
+                    cron or newsbeuter (maybe using ssh from an other host).
+                    Example (commandline):
+                    \$ echo -e \\
+                        "*/newsbar add --color red [RSS]\\t 3 unread feeds (18 unread articles)" \\
+                        > ~/.weechat/weechat_fifo_$$
+                    \$ echo "*/newsbar add simple message" > ~/.weechat/weechat_fifo_$$
     toggle,
     hide, show,
     scroll_home,
@@ -178,7 +197,7 @@ Config settings:
 EO_HELP
 
 my $COMPLETITION  =
-"always|away_only|clear|memo|toggle|hide|show|scroll_down|scroll_up|scroll_home|scroll_end";
+"always|away_only|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_home|scroll_end";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -449,6 +468,23 @@ sub newsbar {
                   . ( defined $arg ? $arg : '' ) );
         } elsif ( $cmd eq 'clear' ) {
             _bar_clear($arg);
+        } elsif ( $cmd eq 'add' ) {
+            my ($add_cmd, $value) = ($arg =~ /^(--color)\s+(.*?)\s+/);
+
+            if ( $add_cmd eq '--color' ) {
+                $arg =~ s/^--color\s+$value//;
+                if ( $arg =~ /\t/ ) {
+                    my $color_code = weechat::color($value);
+                    $color_code = '' if $color_code =~ /F-1/;    # XXX ^Y must be literal ctrl-v,ctrl-Y
+                    $arg = $color_code . $arg;
+                } else {
+                    $arg = weechat::color("cyan") . "[INFO]\t" . $arg;
+                }
+            } else {
+                $arg = weechat::color("cyan") . "[INFO]\t" . $arg unless $arg =~ /\t/;
+            }
+
+            _bar_print($arg);
         }
     }
 
@@ -603,6 +639,7 @@ use constant {
 sub _terminal_columns { my $c = `tput cols`; chomp $c; return $c; }
 
 # color codes starting with ctrl-Y[FB\*] (gui-color.h)
+# FIXME check for color error code: 'F-1'
 sub _colorcodes_len {
     my $str = shift;
 
