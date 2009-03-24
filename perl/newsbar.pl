@@ -52,6 +52,7 @@
 #  bar_hidden_on_start     Start with a hidden bar.
 #  bar_visible_lines       lines visible if bar is shown.
 #  bar_seperator           Show bar separator line.
+#  bar_title               Title of info bar
 #
 #  debug:                  Show some debug/warning messages on failture
 #
@@ -111,6 +112,7 @@ my %SETTINGS = (
     "bar_auto_hide"          => "on",
     "bar_visible_lines"      => "4",
     "bar_seperator"          => "off",
+    "bar_title"              => "Highlights",
     "debug"                  => "on",
 );
 
@@ -167,6 +169,8 @@ Config settings:
                             default: '$SETTINGS{bar_visible_lines}'
     bar_seperator           Show bar separator line ('on'/'off')
                             default: '$SETTINGS{bar_seperator}'
+    bar_title               Title of info bar
+                            default: '$SETTINGS{bar_title}'
 
     debug:                  Show some debug/warning messages on failture. ('on'/'off').
                             default: '$SETTINGS{debug}'
@@ -180,8 +184,11 @@ my $CALLBACK_DATA = undef;
 
 # global vars
 my $Bar;
+my $Bar_title;
+my $Bar_title_name = 'newsbar_title';
 my @Bstr=();
 my $Baway="";
+my $Bar_hidden=undef;
 
 # helper functions {{{
 # FIXME hardcoded max nick-color value to prevent a forever-loop in init_config()
@@ -246,6 +253,43 @@ sub _color_str {
     weechat::color($color_name) . $str  . weechat::color('default');
 }
 
+sub _bar_toggle {
+    my $cmd = shift;
+
+    if ( $cmd eq 'show' ) {
+        $Bar_hidden = 0;
+    } elsif ( $cmd eq 'hide' ) {
+        $Bar_hidden = 1;
+    } elsif ( $cmd eq 'toggle' ) {
+        $Bar_hidden = $Bar_hidden ? 0 : 1;
+    }
+
+    if ($Bar_hidden) {
+        my ( $bar, $bar_title ) = _bar_get();
+        weechat::bar_set($bar_title, 'hidden', $Bar_hidden); # XXX bar must be visible before bar_item_update() is called!
+        weechat::bar_set($bar, 'hidden', $Bar_hidden); # XXX bar must be visible before bar_item_update() is called!
+    } else {
+        _bar_show();
+    }
+}
+
+sub _bar_hide {
+    weechat::bar_item_update($Bar_title_name);
+    weechat::bar_item_update(weechat::config_get_plugin('bar_name'));
+
+    if (weechat::config_get_plugin('bar_auto_hide') eq 'on' and not @Bstr) {
+        $Bar_hidden = 1;
+        my ( $bar, $bar_title ) = _bar_get();
+
+        if ($bar and $bar_title) {
+            weechat::command('', "/bar hide " . $Bar_title_name);
+            weechat::command('', "/bar hide " . weechat::config_get_plugin('bar_name'));
+        } else {
+            ( $bar, $bar_title ) = _bar_recreate();
+        }
+    }
+}
+
 sub _bar_clear {
     my $arg = shift;
 
@@ -253,12 +297,10 @@ sub _bar_clear {
 
     @Bstr = $arg ? grep { not $_->[1] =~ /$arg/} @Bstr : ();
 
-    weechat::bar_item_update(weechat::config_get_plugin('bar_name'));
-    weechat::command('', "/bar hide " . weechat::config_get_plugin('bar_name'))
-        if weechat::config_get_plugin('bar_auto_hide') eq 'on' and not @Bstr;
+    _bar_hide();
 }
 
-sub _date_time {
+sub _bar_date_time {
     my $dt = strftime( weechat::config_string (weechat::config_get('weechat.look.buffer_time_format')), localtime);
     # FIXME user config
     my $tdelim = weechat::color ("yellow") . ":" . weechat::color ("default");
@@ -269,17 +311,28 @@ sub _date_time {
     return $dt;
 }
 
-sub _print_bar {
-    my $str = shift;
-    unshift(@Bstr , [_date_time() . " ",  $str]); # insert msg to top
-#    build_bar();
-    my $bar = weechat::bar_search( weechat::config_get_plugin('bar_name'));
-    if ( $bar) {
-        weechat::bar_set($bar, 'hidden', '0'); # XXX bar must be visible before bar_item_update() is called!
+sub _bar_show {
+    my ( $bar, $bar_title ) = _bar_get();
+
+    unless ($bar and $bar_title) {
+        ( $bar, $bar_title ) = _bar_recreate();
+    }
+    if ( $bar and $bar_title ) {
+        $Bar_hidden = 0;
+        weechat::bar_set($bar_title, 'hidden', '0');    # XXX bars must be visible before
+        weechat::bar_set($bar, 'hidden', '0');          #     bar_item_update() is called!
+        weechat::bar_item_update($Bar_title_name);
         weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
     } else {
-        DEBUG("_print_formatted(): ERROR, no bar");
+        weechat::print('', "$SCRIPT: ERROR: missing bar, please reload $SCRIPT");
     }
+}
+
+sub _bar_print {
+    my $str = shift;
+    unshift(@Bstr , [_bar_date_time() . " ",  $str]); # insert msg to top
+
+    _bar_show();
 }
 
 sub _print_formatted {
@@ -296,7 +349,7 @@ sub _print_formatted {
         $i++;
     }
 
-    _print_bar( $fmt . "\t" . $message); # insert msg to top
+    _bar_print( $fmt . "\t" . $message); # insert msg to top
 }
 }
 # }}}
@@ -374,7 +427,7 @@ sub newsbar {
     } elsif ( $_[1] eq 'away_only' ) {
             weechat::config_set_plugin( 'away_only', 'on' );
     } elsif ( $_[1] eq 'show' or $_[1] eq 'hide' or $_[1] eq 'toggle' ) {
-            weechat::command('', "/bar $_[1] " . weechat::config_get_plugin('bar_name') );
+            _bar_toggle( $_[1] );
     } elsif ( $_[1] eq 'scroll_home' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * yb" );
     } elsif ( $_[1] eq 'scroll_end' ) {
@@ -389,7 +442,7 @@ sub newsbar {
         my ( $cmd, $arg ) = ( $_[1] =~ /(.*?)\s+(.*)/ );
         $cmd = $_[1] unless $cmd;
         if ( $cmd eq 'memo' ) {
-            _print_bar(
+            _bar_print(
                 weechat::color( weechat::config_get_plugin('memo_tag_color') )
                   . "[memo]"
                   . weechat::color('default,default') . "\t"
@@ -440,19 +493,41 @@ sub highlights_config_changed {
     return weechat::WEECHAT_RC_OK;
 }
 
+sub _bar_exists {
+}
+
+sub _bar_get {
+    return ( weechat::bar_search( weechat::config_get_plugin('bar_name') ),
+        weechat::bar_search($Bar_title_name) );
+}
+
+sub _bar_recreate {
+    my ( $bar, $bar_title ) = _bar_get();
+
+    weechat::print('', _color_str('yellow', '=!=') . "\t$SCRIPT: recreating missing bars (deleted by user?)");
+    weechat::command('', "/bar del " . weechat::config_get_plugin('bar_name')) if $bar;
+    weechat::command('', "/bar del " . $Bar_title_name )                       if $bar_title;
+    
+    init_bar();
+
+    return _bar_get();
+}
+
 # Make new bar if needed
 sub init_bar {
-    my $bbar = weechat::config_get_plugin('bar_name');
+    my $bar_name = weechat::config_get_plugin('bar_name');
+
+    $Bar_hidden = weechat::config_get_plugin('bar_hidden_on_start')
+      unless defined $Bar_hidden;
 
     unless (defined $Bar) {
         highlights_config_changed(
             "plugins.var.perl." . $SCRIPT . ".on_away",
             weechat::config_get_plugin('away_only')
         );
-        weechat::bar_item_new(  weechat::config_get_plugin('bar_name'), "build_bar" );
+        weechat::bar_item_new( $bar_name, "build_bar" );
         weechat::bar_new(
-            weechat::config_get_plugin('bar_name'),
-            weechat::config_get_plugin('bar_hidden_on_start'),
+            $bar_name,                              $Bar_hidden,
             "100",                                  "root",
             "",                                     "top",
             "vertical",                             "vertical",
@@ -461,29 +536,53 @@ sub init_bar {
             "default",                              "default",
             "default",
             weechat::config_get_plugin('bar_seperator'),
-            weechat::config_get_plugin('bar_name')
+            $bar_name
         );
     }
-    weechat::bar_item_update( weechat::config_get_plugin('bar_name'));
+    unless (defined $Bar_title) {
+        weechat::bar_item_new( $Bar_title_name, "build_bar_title" );
+        weechat::bar_new(
+            $Bar_title_name,                        $Bar_hidden,
+            "100",                                  "root",
+            "",                                     "top",
+            "vertical",                             "vertical",
+            "0",                                    '1',
+            "default",                              "default",
+            "default",
+            'off',
+            $Bar_title_name
+        );
+    }
+
+    weechat::bar_item_update($Bar_title_name);
+    weechat::bar_item_update($bar_name);
 }
 
+# FIXME look for FlashCode's ' Force refresh of bars using a bar item when it is destroyed'
+# needed for reload too, to be sure to display title before the text bar if e.g.
+# text bar was deleted by user
 sub unload {
     $Bar = weechat::bar_search( weechat::config_get_plugin('bar_name') );
+#    my ( $bar, $bar_title ) = _bar_get();
 
-    if ($Bar and weechat::config_get_plugin('remove_bar_on_unload') eq 'on') {
+#    if ($Bar and weechat::config_get_plugin('remove_bar_on_unload') eq 'on') {
+        weechat::bar_remove(weechat::bar_search( $Bar_title_name));
         weechat::bar_remove($Bar);
-    }
+#    }
 
     return weechat::WEECHAT_RC_OK;
 }
 # }}}
 
 sub build_bar_title {
-    my $i = shift;
 
     # FIXME user config
-    my $title = weechat::color (",blue") .  "NewsBar: [%I] [active: %A | most recent: first]";
+    my $title =
+        weechat::color(",blue")
+      . weechat::config_get_plugin('bar_title')
+      . ": [%I] [active: %A | most recent: first]";
 
+    my $i = @Bstr;
     $i ||= 0;
 
     $title =~ s/%A/$Baway/;
@@ -538,7 +637,6 @@ sub build_bar {
 
     # FIXME use user config color
     my $delim     = weechat::color ("green") . " | " . weechat::color ("default");
-    my $delim_len = _colorcodes_len( $delim );
 
     $Text::Wrap::columns  = _terminal_columns() - ($nlen_max + $tlen_max + 3); # 3 := length of delim without color codes
     $Text::Wrap::unexpand = 0;   # don't turn spaces into tabs
@@ -554,8 +652,6 @@ sub build_bar {
             $str .= sprintf( "%*s%*s$delim%s\n", $tlen_max, @$_[TIME], $nlen_max + @$_[NICK_CCL], @$_[NICK], @$_[MSG] );
         }
     }
-
-    $str = build_bar_title($i) . "\n" . $str;
 
     return $str;
 }
