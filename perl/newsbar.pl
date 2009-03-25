@@ -469,15 +469,16 @@ sub newsbar {
         } elsif ( $cmd eq 'clear' ) {
             _bar_clear($arg);
         } elsif ( $cmd eq 'add' ) {
-            my ($add_cmd, $value) = ($arg =~ /^(--color)\s+(.*?)\s+/);
+            my ($add_cmd, $value) = ($arg =~ /^(--color)\s+(.*?)(\s+|\$)/);
 
-            if ( $add_cmd eq '--color' ) {
+            if ( defined $add_cmd and $add_cmd eq '--color' ) {
                 $arg =~ s/^--color\s+$value//;
                 if ( $arg =~ /\t/ ) {
                     my $color_code = weechat::color($value);
                     $color_code = '' if $color_code =~ /F-1/;    # XXX ^Y must be literal ctrl-v,ctrl-Y
                     $arg = $color_code . $arg;
                 } else {
+                    $arg =~ s/^\s+//;
                     $arg = weechat::color("cyan") . "[INFO]\t" . $arg;
                 }
             } else {
