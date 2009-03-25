@@ -125,12 +125,12 @@ my $COMMAND     = "newsbar";             # new command name
 my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]>"
                  ."| <memo [text]> | <add [--color color] text>"
                  ."| <toggle> | <hide> | <show>"
-                 ."| <scroll_home> | <scroll_up> | <scroll_down> | <scroll_end>";
+                 ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
 
-    always:         enable highlights to bar always       (sets 'away_only' = off).
-    away_only:      enable highlights to bar if away only (sets 'away_only' = on).
+    always:         enable highlights to bar always       (set 'away_only' = off).
+    away_only:      enable highlights to bar if away only (set 'away_only' = on).
     clear [regexp]: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
                     If a perl regular expression is given, clear matched lines only.
     memo [text]:    Print a memo into bar '$SETTINGS{bar_name}'.
@@ -145,18 +145,36 @@ Arguments:
                     infront of a tab will be colored.
                     The best way to use this command is in a script called by e.g.
                     cron or newsbeuter (maybe using ssh from an other host).
+
                     Example (commandline):
                     \$ echo -e \\
-                        "*/newsbar add --color red [RSS]\\t 3 unread feeds (18 unread articles)" \\
+                        "*/newsbar add --color red [RSS]\\t3 unread feeds (18 unread articles)" \\
                         > ~/.weechat/weechat_fifo_$$
                     \$ echo "*/newsbar add simple message" > ~/.weechat/weechat_fifo_$$
+
+                    Example (script for newsbeuter's 'notify-program'):
+                    (You can delete this messages doing '/newsbar clear [RSS]')
+                    #/bin/sh
+                    WPID=`pgrep weechat-curses`
+                    [ "x\$WPID" != "x" ] && echo -e "*/newsbar add --color brown [RSS]\\t\$@" \\
+                                             > "\$HOME/.weechat/weechat_fifo_\$WPID"
+
     toggle,
-    hide, show,
-    scroll_home,
-    scroll_end,
-    scroll_up,
-    scroll_down:  Simplify the use of eg. '/$SCRIPT scroll_end' instead of '/bar $SCRIPT scroll * ye',
-                  and simple use of key bindings.
+    hide,           show,
+    scroll_home,    scroll_end,
+    scroll_page_up, scroll_page_down
+    scroll_up,      scroll_down:
+                    Usefull for simple key bindings.
+
+                    Example key bindings (all on numeric keypad):
+                    <Return> /key meta-OM /newsbar toggle
+                    <7>      /key meta-OU /newsbar scroll_home
+                    <1>      /key meta-O\\ /newsbar scroll_end
+                    <9>      /key meta-OZ /newsbar scroll_page_up
+                    <3>      /key meta-O[ /newsbar scroll_page_down
+                    <8>      /key meta-OW /newsbar scroll_up
+                    <2>      /key meta-OY /newsbar scroll_down
+                    <alt-,>  /key meta-meta-O_ /input delete_beginning_of_line; /input insert /newsbar clear
 
 Config settings:
 
@@ -197,7 +215,7 @@ Config settings:
 EO_HELP
 
 my $COMPLETITION  =
-"always|away_only|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_home|scroll_end";
+"always|away_only|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -441,6 +459,8 @@ sub highlights_private {
 
 sub newsbar {
 
+    return weechat::WEECHAT_RC_OK if $_[1] =~ /^scroll_/ and $Bar_hidden;
+
     if ( $_[1] eq 'always' ) {
             weechat::config_set_plugin( 'away_only', 'off' );
     } elsif ( $_[1] eq 'away_only' ) {
@@ -451,12 +471,16 @@ sub newsbar {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * yb" );
     } elsif ( $_[1] eq 'scroll_end' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * ye" );
-    } elsif ( $_[1] eq 'scroll_up' ) {
+    } elsif ( $_[1] eq 'scroll_page_up' ) {
             weechat::command('', "/bar scroll " .
                 weechat::config_get_plugin('bar_name') . " * y-" . weechat::config_get_plugin('bar_visible_lines'));
-    } elsif ( $_[1] eq 'scroll_down' ) {
+    } elsif ( $_[1] eq 'scroll_page_down' ) {
             weechat::command('', "/bar scroll " .
                 weechat::config_get_plugin('bar_name') . " * y+" . weechat::config_get_plugin('bar_visible_lines'));
+    } elsif ( $_[1] eq 'scroll_up' ) {
+            weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y-1");
+    } elsif ( $_[1] eq 'scroll_down' ) {
+            weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y+1");
     } else {
         my ( $cmd, $arg ) = ( $_[1] =~ /(.*?)\s+(.*)/ );
         $cmd = $_[1] unless $cmd;
