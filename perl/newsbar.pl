@@ -507,8 +507,9 @@ sub newsbar {
             my ($add_cmd, $value) = ($arg =~ /^(--color)\s+(.*?)(\s+|\$)/);
 
             if ( defined $add_cmd and $add_cmd eq '--color' ) {
-                $arg =~ s/^--color\s+$value//;
+                $arg =~ s/^--color\s+$value\s*//;
                 if ( $arg =~ /\t/ ) {
+                    $arg =~ s/\s*\t\s*(.*)/\t$1/;
                     my $color_code = weechat::color($value);
                     $color_code = '' if $color_code =~ /F-1/;    # XXX ^Y must be literal ctrl-v,ctrl-Y
                     $arg = $color_code . $arg;
@@ -517,7 +518,12 @@ sub newsbar {
                     $arg = weechat::color("cyan") . "[INFO]\t" . $arg;
                 }
             } else {
-                $arg = weechat::color("cyan") . "[INFO]\t" . $arg unless $arg =~ /\t/;
+                if ( $arg =~ /\t/ ) {
+                    $arg =~ s/\s*\t\s*(.*)/\t$1/;
+                } else {
+                    $arg =~ s/^\s+//;
+                    $arg = weechat::color("cyan") . "[INFO]\t" . $arg unless $arg =~ /\t/;
+               }
             }
 
             _bar_print($arg);
