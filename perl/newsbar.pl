@@ -216,7 +216,7 @@ Config settings:
     bar_title:              Title of info bar
                             default: '$SETTINGS{bar_title}'
 
-    colored_help:           Display colored halp. If you don't like it, do:
+    colored_help:           Display colored help. If you don't like it, do:
                               /set plugins.var.perl.newsbar.colored_help off
                             then reload the script.
                             default: '$SETTINGS{colored_help}'
