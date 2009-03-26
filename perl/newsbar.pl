@@ -114,13 +114,14 @@ my %SETTINGS = (
     "bar_visible_lines"      => "4",
     "bar_seperator"          => "off",
     "bar_title"              => "Highlights",
+    "colored_help"           => "on",
     "debug"                  => "on",
 );
 
 my $SCRIPT      = "newsbar";
 my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
-my $DESCRIPTION = "Listens for news (highlights on all your channels) and writes them into bar 'NewsBar'";
+my $DESCRIPTION = "Listens for highlights on all your channels and writes them and/or text given by commands into bar 'NewsBar'. If the bar is currently hidden, it will be shown automatically at top of weechat.";
 my $COMMAND     = "newsbar";             # new command name
 my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]>"
                  ."| <memo [text]> | <add [--color color] text>"
@@ -129,32 +130,35 @@ my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]>"
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
 
-    always:         enable highlights to bar always       (set 'away_only' = off).
-    away_only:      enable highlights to bar if away only (set 'away_only' = on).
-    clear [regexp]: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
+    always:         enable highlights to bar always       (set config <c>away_only</c> = 'off').
+    away_only:      enable highlights to bar if away only (set config <c>away_only</c> = 'on').
+    <c>clear [regexp]</c>: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
                     If a perl regular expression is given, clear matched lines only.
-    memo [text]:    Print a memo into bar '$SETTINGS{bar_name}'.
-                    If text is not given, an emty line will be printed.
+    <c>memo [text]</c>:    Print a memo into bar '$SETTINGS{bar_name}'.
+                    If text is not given, an empty line will be printed.
 
-    add [--color color] message:
-                    Print a message into bar '$SETTINGS{bar_name}'.
-                    Useful to display text printed into the FIFO pipe of WeeChat.
+    <c>add [--color color] text</c>:
+                    Print text formatted into bar '$SETTINGS{bar_name}'.
+                    Useful to display text using the FIFO pipe of WeeChat (same
+                    as weechat does for buffers).
                     Text given before an optional tab will be printed left to the
                     delemeter, all other text will be printed right to the
-                    delemeter. If --color weechat-color-name is given text
+                    delemeter. If <c>--color weechat-color-name</c> is given, text
                     infront of a tab will be colored.
+                    If text is not given, an empty line will be printed.
                     The best way to use this command is in a script called by e.g.
                     cron or newsbeuter (maybe using ssh from an other host).
 
                     Example (commandline):
                     \$ echo -e \\
-                        "*/newsbar add --color red [RSS]\\t3 unread feeds (18 unread articles)" \\
+                        "*/newsbar add --color lightred [WARN]\\tgit updated! Do: git fetch, rebuild weechat" \\
                         > ~/.weechat/weechat_fifo_$$
                     \$ echo "*/newsbar add simple message" > ~/.weechat/weechat_fifo_$$
 
                     Example (script for newsbeuter's 'notify-program'):
-                    (You can delete this messages doing '/newsbar clear [RSS]')
+                    (You can delete all this messages with '/newsbar <c>clear</c> [RSS]')
                     #/bin/sh
+                    # XXX This script assumes that only one weechat-client is runnig on that host
                     WPID=`pgrep weechat-curses`
                     [ "x\$WPID" != "x" ] && echo -e "*/newsbar add --color brown [RSS]\\t\$@" \\
                                              > "\$HOME/.weechat/weechat_fifo_\$WPID"
@@ -162,53 +166,60 @@ Arguments:
     toggle,
     hide,           show,
     scroll_home,    scroll_end,
-    scroll_page_up, scroll_page_down
+    scroll_page_up, scroll_page_down,
     scroll_up,      scroll_down:
                     Usefull for simple key bindings.
 
                     Example key bindings (all on numeric keypad):
-                    <Return> /key meta-OM /newsbar toggle
-                    <7>      /key meta-OU /newsbar scroll_home
-                    <1>      /key meta-O\\ /newsbar scroll_end
-                    <9>      /key meta-OZ /newsbar scroll_page_up
-                    <3>      /key meta-O[ /newsbar scroll_page_down
-                    <8>      /key meta-OW /newsbar scroll_up
-                    <2>      /key meta-OY /newsbar scroll_down
-                    <alt-,>  /key meta-meta-O_ /input delete_beginning_of_line; /input insert /newsbar clear
+                    <Return> /key meta-OM /newsbar <c>toggle</c>
+                    <7>      /key meta-OU /newsbar <c>scroll_home</c>
+                    <1>      /key meta-O\\ /newsbar <c>scroll_end</c>
+                    <9>      /key meta-OZ /newsbar <c>scroll_page_up</c>
+                    <3>      /key meta-O[ /newsbar <c>scroll_page_down</c>
+                    <8>      /key meta-OW /newsbar <c>scroll_up</c>
+                    <2>      /key meta-OY /newsbar <c>scroll_down</c>
+                    <alt-,>  /key meta-meta-O_ /input delete_beginning_of_line; /input insert /newsbar <c>clear</c>
 
 Config settings:
 
-    away_only:              Collect hihlights only if you're away.
+    away_only:              Collect highlights only if you're away.
                             default: '$SETTINGS{away_only}'
-    show_highlights         Enable/disable handling of public messages. ('on'/'off')
+    show_highlights:        Enable/disable handling of public messages. ('on'/'off')
                             default: '$SETTINGS{show_highlights}'
-    show_priv_msg           Enable/disable handling of private messages. ('on'/'off')
+    show_priv_msg:          Enable/disable handling of private messages. ('on'/'off')
                             default: '$SETTINGS{show_priv_msg}'
-    show_priv_server_msg    Enable/disable handling of private server messages. ('on'/'off')
+    show_priv_server_msg:   Enable/disable handling of private server messages. ('on'/'off')
+                            (server responses to server commands including your nick
+                             (i.e.: '/msg nickserv info'))
                             default: '$SETTINGS{show_priv_server_msg}'
-    format_public :         Format-string for public highlights.
+    format_public:          Format-string for public highlights.
     format_private:         Format-string for private highlights.
 
-    Format-string:          %n : nick,    %N : colored nick
+                            Format-string:
+                            %n : nick,    %N : colored nick
                             %c : channel, %C : colored channel  (public only)
                             %s : server
                             default public format:  '$SETTINGS{format_public}'
                             default private format: '$SETTINGS{format_private}'
 
-    memo_tag_color          Color of '[memo]' e.g.: 'black,cyan' fg: black, bg: cyan
+    memo_tag_color:         Color of '[memo]' e.g.: 'black,cyan' fg: black, bg: cyan
                             default: '$SETTINGS{memo_tag_color}'
-    remove_bar_on_unload    Remove bar when script will be unloaded. 
-    bar_auto_hide           Hide bar if empty ('on'/'off')
+    remove_bar_on_unload:   Remove bar when script will be unloaded.
+    bar_auto_hide:          Hide bar if empty ('on'/'off')
                             default: '$SETTINGS{bar_auto_hide}'
-    bar_hidden_on_start     Start with a hidden bar ('1'/'0')
+    bar_hidden_on_start:    Start with a hidden bar ('1'/'0')
                             default: '$SETTINGS{bar_hidden_on_start}'
-    bar_visible_lines       lines visible if bar is shown
+    bar_visible_lines:      lines visible if bar is shown
                             default: '$SETTINGS{bar_visible_lines}'
-    bar_seperator           Show bar separator line ('on'/'off')
+    bar_seperator:          Show bar separator line ('on'/'off')
                             default: '$SETTINGS{bar_seperator}'
-    bar_title               Title of info bar
+    bar_title:              Title of info bar
                             default: '$SETTINGS{bar_title}'
 
+    colored_help:           Display colored halp. If you don't like it, do:
+                              /set plugins.var.perl.newsbar.colored_help off
+                            then reload the script.
+                            default: '$SETTINGS{colored_help}'
     debug:                  Show some debug/warning messages on failture. ('on'/'off').
                             default: '$SETTINGS{debug}'
 
@@ -720,7 +731,26 @@ sub build_bar {
 
 # ------------------------------------------------------------------------------
 # here we go...
-#
+
+# color/uncolor help {{{
+if (weechat::config_string (weechat::config_get('plugins.var.perl.newsbar.colored_help')) eq 'off' ) {
+    $CMD_HELP =~ s/<c>|<\/c>//g;
+} else {
+    my $cc_cyan    = weechat::color('cyan');
+    my $cc_white   = weechat::color('white');
+    my $cc_brown   = weechat::color('brown');
+    my $cc_default = weechat::color('default');
+    $CMD_HELP =~ s/default: '(.*)?'/default: '$cc_cyan$1$cc_default'/g;
+    $CMD_HELP =~ s/'(on|off|0|1)?'/'$cc_cyan$1$cc_default'/g;
+    $CMD_HELP =~ s/(\/newsbar)/$cc_white$1$cc_default/g;
+    foreach ( split( /\|/, $COMPLETITION ), keys %SETTINGS ) {
+        $CMD_HELP =~
+          s/(?|^(\s+)($_)([:,])|(\s+)($_)([:,])$)/$1$cc_brown$2$cc_default$3/gm;
+    }
+    $CMD_HELP =~ s/<c>(.*)?<\/c>/$cc_brown$1$cc_default/g;
+    $CMD_HELP =~ s/(%[nNcCs])/$cc_cyan$1$cc_default/g;
+} # }}}
+
 # init script
 # XXX If you don't check weechat::register() for succsess, %SETTINGS will be set
 # XXX by init_config() into the namespace of other perl scripts.
