@@ -77,6 +77,9 @@
 #
 # Changelog:
 #
+# Version 0.01 2009-09-01
+#   - quickfix for new api
+#
 # Version 0.01 2009-03-20
 #   - hilights.pl partly rewritten and renamed it to newsbar.pl
 #     (use a bar instead of a buffer)
@@ -94,7 +97,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.01;
+my $Version = 0.02;
 
 # constants
 #
@@ -435,16 +438,16 @@ sub highlights_public {
                 $nick    = $server;
                 $channel = weechat::color('magenta') . "[SERVER-MSG]";
             }
-        } else { # FIXME
-            if ( weechat::config_get_plugin('debug') eq 'on' ) {
-                $server  = weechat::buffer_get_string( $bufferp, "localvar_server" ) || 'UNDEF';
-                $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" ) || 'UNDEF';
-                $btype ||= 'UNDEF';
-                weechat::print('', "$SCRIPT: WARNING: highlights_public: nothing done for localvar_type: '$btype'");
-                weechat::print('', "$SCRIPT:          * message came form nick:    '$nick'");
-                weechat::print('', "$SCRIPT:          * message came form server:  '$server'");
-                weechat::print('', "$SCRIPT:          * message came form channel: '$channel'");
-            }
+#         } else { # FIXME disabled cause if debug is on '/help newsbar' fails (prints are eaten here?)
+#             if ( weechat::config_get_plugin('debug') eq 'on' ) {
+#                 $server  = weechat::buffer_get_string( $bufferp, "localvar_server" ) || 'UNDEF';
+#                 $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" ) || 'UNDEF';
+#                 $btype ||= 'UNDEF';
+#                 weechat::print('', "$SCRIPT: WARNING: highlights_public: nothing done for localvar_type: '$btype'");
+#                 weechat::print('', "$SCRIPT:          * message came form nick:    '$nick'");
+#                 weechat::print('', "$SCRIPT:          * message came form server:  '$server'");
+#                 weechat::print('', "$SCRIPT:          * message came form channel: '$channel'");
+#             }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
     }
@@ -468,33 +471,38 @@ sub highlights_private {
     return weechat::WEECHAT_RC_OK;
 }
 
+# Arguments in function:
+# arg0 = data,
+# arg1 = string with pointer to buffer,
+# arg2 = user arguments for command 
 sub newsbar {
 
     return weechat::WEECHAT_RC_OK if $_[1] =~ /^scroll_/ and $Bar_hidden;
 
-    if ( $_[1] eq 'always' ) {
+    my $_cmd = $_[2];
+    if ( $_cmd eq 'always' ) {
             weechat::config_set_plugin( 'away_only', 'off' );
-    } elsif ( $_[1] eq 'away_only' ) {
+    } elsif ( $_cmd eq 'away_only' ) {
             weechat::config_set_plugin( 'away_only', 'on' );
-    } elsif ( $_[1] eq 'show' or $_[1] eq 'hide' or $_[1] eq 'toggle' ) {
-            _bar_toggle( $_[1] );
-    } elsif ( $_[1] eq 'scroll_home' ) {
+    } elsif ( $_cmd eq 'show' or $_cmd eq 'hide' or $_cmd eq 'toggle' ) {
+            _bar_toggle( $_cmd );
+    } elsif ( $_cmd eq 'scroll_home' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * yb" );
-    } elsif ( $_[1] eq 'scroll_end' ) {
+    } elsif ( $_cmd eq 'scroll_end' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * ye" );
-    } elsif ( $_[1] eq 'scroll_page_up' ) {
+    } elsif ( $_cmd eq 'scroll_page_up' ) {
             weechat::command('', "/bar scroll " .
                 weechat::config_get_plugin('bar_name') . " * y-" . weechat::config_get_plugin('bar_visible_lines'));
-    } elsif ( $_[1] eq 'scroll_page_down' ) {
+    } elsif ( $_cmd eq 'scroll_page_down' ) {
             weechat::command('', "/bar scroll " .
                 weechat::config_get_plugin('bar_name') . " * y+" . weechat::config_get_plugin('bar_visible_lines'));
-    } elsif ( $_[1] eq 'scroll_up' ) {
+    } elsif ( $_cmd eq 'scroll_up' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y-1");
-    } elsif ( $_[1] eq 'scroll_down' ) {
+    } elsif ( $_cmd eq 'scroll_down' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y+1");
     } else {
-        my ( $cmd, $arg ) = ( $_[1] =~ /(.*?)\s+(.*)/ );
-        $cmd = $_[1] unless $cmd;
+        my ( $cmd, $arg ) = ( $_cmd =~ /(.*?)\s+(.*)/ );
+        $cmd = $_cmd unless $cmd;
         if ( $cmd eq 'memo' ) {
             _bar_print(
                 weechat::color( weechat::config_get_plugin('memo_tag_color') )
@@ -603,7 +611,7 @@ sub init_bar {
             "plugins.var.perl." . $SCRIPT . ".on_away",
             weechat::config_get_plugin('away_only')
         );
-        weechat::bar_item_new( $bar_name, "build_bar" );
+        weechat::bar_item_new( $bar_name, "build_bar", "" );
         weechat::bar_new(
             $bar_name,                              $Bar_hidden,
             "100",                                  "root",
@@ -618,7 +626,7 @@ sub init_bar {
         );
     }
     unless (defined $Bar_title) {
-        weechat::bar_item_new( $Bar_title_name, "build_bar_title" );
+        weechat::bar_item_new( $Bar_title_name, "build_bar_title", "" );
         weechat::bar_new(
             $Bar_title_name,                        $Bar_hidden,
             "100",                                  "root",
@@ -762,13 +770,13 @@ if (weechat::config_string (weechat::config_get('plugins.var.perl.newsbar.colore
 # XXX by init_config() into the namespace of other perl scripts.
 if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "unload", "" ) ) {
 
-    weechat::hook_command( $COMMAND,  $DESCRIPTION,  $ARGS_HELP, $CMD_HELP, $COMPLETITION, $CALLBACK );
-    weechat::hook_print( "", "", "", 1, "highlights_public" );
-    weechat::hook_signal( "weechat_pv",    "highlights_private" );
+    weechat::hook_command( $COMMAND,  $DESCRIPTION,  $ARGS_HELP, $CMD_HELP, $COMPLETITION, $CALLBACK, "" );
+    weechat::hook_print( "", "", "", 1, "highlights_public", "" );
+    weechat::hook_signal( "weechat_pv",    "highlights_private", "" );
 
     init_config();
     init_bar();
-    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".on_away", 'highlights_config_changed' );
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".on_away", 'highlights_config_changed', "" );
 }
 
 # vim: ai ts=4 sts=4 et sw=4 foldmethod=marker :
