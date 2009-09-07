@@ -108,6 +108,9 @@ my $Version = 0.04;
 my %SETTINGS = (
     "bar_name"               => "newsbar",
     "beeps"                  => "off",
+    "beep_freq_channel"      => "6000",
+    "beep_freq_private"      => "6000",
+    "beep_freq_msg"          => "6000",
     "show_highlights"        => "on",
     "away_only"              => "off",
     "format_public"          => '%N.%C@%s',
@@ -192,6 +195,12 @@ Arguments:
 Config settings:
 
     beeps:                  Beep on highlights. ('on'/'off')
+    beep_freq_channel:      frequence of beep (highlighted on a public channel).
+                            default: '$SETTINGS{beep_freq_channel}'
+    beep_freq_private:      frequence of beep (message on a private).
+                            default: '$SETTINGS{beep_freq_private}'
+    beep_freq_msg:          frequence of beep (highlighted on a private channel).
+                            default: '$SETTINGS{beep_freq_msg}'
     away_only:              Collect highlights only if you're away.
                             default: '$SETTINGS{away_only}'
     show_highlights:        Enable/disable handling of public messages. ('on'/'off')
@@ -247,6 +256,10 @@ my $Bar_title_name = 'newsbar_title';
 my @Bstr=();
 my $Baway="";
 my $Bar_hidden=undef;
+my $Beeps="";
+my $Beep_freq_ch = 1000;
+my $Beep_freq_pr = 1000;
+my $Beep_freq_msg = 1000;
 
 # helper functions {{{
 # FIXME hardcoded max nick-color value to prevent a forever-loop in init_config()
@@ -445,11 +458,11 @@ sub highlights_public {
 
         if ( $btype eq 'channel' ) {
             $fmt = weechat::config_get_plugin('format_public');
-            _beep(6000,20);
+            _beep($Beep_freq_ch, 20);
         } elsif ( $btype eq 'private' ) {
             $channel = '';
             $fmt     = weechat::config_get_plugin('format_private');
-            _beep(4000, 20);
+            _beep($Beep_freq_pr, 20);
 
         } elsif ( $btype eq 'server' ) {
             if ( weechat::config_get_plugin('show_priv_server_msg') eq 'on' ) {
@@ -474,11 +487,13 @@ sub highlights_private {
 
     my $fmt = '%N%c';
 
-    _beep(2000, 20);
-    _print_formatted( $fmt, $message, $nick, weechat::color('red') . "[privmsg]",
-        undef )
-      if weechat::config_get_plugin('show_priv_msg') eq "on"
-          and $nick ne '--';
+    if ( weechat::config_get_plugin('show_priv_msg') eq "on"
+        and $nick ne '--' )
+    {
+        _beep( $Beep_freq_msg, 20 );
+        _print_formatted( $fmt, $message, $nick,
+            weechat::color('red') . "[privmsg]", undef );
+    }
 
     return weechat::WEECHAT_RC_OK;
 }
@@ -564,6 +579,58 @@ sub init_config {
         weechat::config_set_plugin( $option, $default_value )
           if weechat::config_get_plugin($option) eq "";
     }
+
+    $Beep_freq_ch = weechat::config_get_plugin('beep_freq_channel');
+    $Beep_freq_pr = weechat::config_get_plugin('beep_freq_private');
+    $Beep_freq_msg = weechat::config_get_plugin('beep_freq_msg');
+
+}
+
+sub beepfreq_config_changed {
+    my $datap  = shift;
+    my $option = shift;
+    my $value  = shift;
+
+    if ( $option =~ /\.beep_freq_channel$/ ) {
+        $Beep_freq_ch = $value;
+    } elsif ( $option =~ /\.beep_freq_private$/ ) {
+        $Beep_freq_pr = $value;
+    } elsif ( $option =~ /\.beep_freq_msg$/ ) {
+        $Beep_freq_msg = $value;
+    }
+
+    return weechat::WEECHAT_RC_OK;
+}
+
+sub beeps_config_changed {
+    my $datap = shift;
+    my $option = shift;
+    my $value = shift;
+
+    if ( $value eq 'on' ) {
+        $Beeps = " on";
+    } else {
+        if( $value ne 'off' ) {
+            weechat::print('',  weechat::color('lightred') . "=!=\t" . "$SCRIPT: "
+                . _color_str( 'lightred', "ERROR" )
+                . ": wrong value: '"
+                . _color_str( 'red', $value ) . "' "
+                . "for config var 'away_only'. Must be one of '"
+                . _color_str('cyan', "on" ) . "', '"
+                . _color_str('cyan', "off" ) . "'. I'm using: '"
+                . _color_str('cyan', "off" ) . "'."
+            );
+
+            # FIXME unhook/rehook needed?
+            weechat::unhook( 'beeps_config_changed' );
+            weechat::config_set_plugin( 'beeps', 'off' );
+            weechat::hook_config( $option, 'beeps_config_changed' );
+        }
+        $Beeps = "off";
+    }
+
+    weechat::bar_item_update($Bar_title_name);
+    return weechat::WEECHAT_RC_OK;
 }
 
 sub highlights_config_changed {
@@ -623,6 +690,9 @@ sub init_bar {
 
     $Bar_hidden = weechat::config_get_plugin('bar_hidden_on_start')
       unless defined $Bar_hidden;
+
+    $Beeps = weechat::config_get_plugin('beeps');
+    $Beeps = ' ' . $Beeps if $Beeps eq 'on';
 
     unless (defined $Bar) {
         highlights_config_changed(
@@ -685,13 +755,14 @@ sub build_bar_title {
     my $title =
         weechat::color(",blue")
       . weechat::config_get_plugin('bar_title')
-      . ": [%I] [active: %A | most recent: first]";
+      . ": [%I] [active: %A | beep: %B | most recent: first]";
 
     my $i = @Bstr;
     $i ||= 0;
 
     $title =~ s/%A/$Baway/;
     $title =~ s/%I/$i/;
+    $title =~ s/%B/$Beeps/;
 
     return $title;
 }
@@ -796,6 +867,8 @@ if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "u
     init_config();
     init_bar();
     weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".away_only", 'highlights_config_changed', "" );
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".beep_freq_*", 'beepfreq_config_changed', "" );
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".beeps", 'beeps_config_changed', "" );
 }
 
 # vim: ai ts=4 sts=4 et sw=4 foldmethod=marker :
