@@ -100,13 +100,14 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.03;
+my $Version = 0.04;
 
 # constants
 #
 # script default options
 my %SETTINGS = (
     "bar_name"               => "newsbar",
+    "beeps"                  => "off",
     "show_highlights"        => "on",
     "away_only"              => "off",
     "format_public"          => '%N.%C@%s',
@@ -188,6 +189,7 @@ Arguments:
 
 Config settings:
 
+    beeps:                  Beep on highlights. ('on'/'off')
     away_only:              Collect highlights only if you're away.
                             default: '$SETTINGS{away_only}'
     show_highlights:        Enable/disable handling of public messages. ('on'/'off')
@@ -252,6 +254,17 @@ my $_Ncol    = undef;
 my $_MIN_COL = 10;
 
 sub DEBUG {weechat::print('', "***\t" . $_[0]);}
+
+sub _beep {
+    my $arg = "beep -f " . $_[0] . " -l " . $_[1];
+
+    system($arg)
+      if (
+        weechat::config_string(
+            weechat::config_get('plugins.var.perl.newsbar.beeps')
+        ) eq 'on'
+      );
+}
 
 sub _init_max_colors {
     if ( !defined $_Ncol ) {
@@ -430,9 +443,11 @@ sub highlights_public {
 
         if ( $btype eq 'channel' ) {
             $fmt = weechat::config_get_plugin('format_public');
+            _beep(6000,20);
         } elsif ( $btype eq 'private' ) {
             $channel = '';
             $fmt     = weechat::config_get_plugin('format_private');
+            _beep(4000, 20);
 
         } elsif ( $btype eq 'server' ) {
             if ( weechat::config_get_plugin('show_priv_server_msg') eq 'on' ) {
@@ -440,6 +455,7 @@ sub highlights_public {
                 $fmt     = '%N%c';
                 $nick    = $server;
                 $channel = weechat::color('magenta') . "[SERVER-MSG]";
+                _beep(1000, 20);
             }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
@@ -456,6 +472,7 @@ sub highlights_private {
 
     my $fmt = '%N%c';
 
+    _beep(2000, 20);
     _print_formatted( $fmt, $message, $nick, weechat::color('red') . "[privmsg]",
         undef )
       if weechat::config_get_plugin('show_priv_msg') eq "on"
