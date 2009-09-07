@@ -130,7 +130,7 @@ my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
 my $DESCRIPTION = "Listens for highlights on all your channels and writes them and/or text given by commands into bar 'NewsBar'. If the bar is currently hidden, it will be shown automatically at top of weechat.";
 my $COMMAND     = "newsbar";             # new command name
-my $ARGS_HELP   = "<always> | <away_only> | <clear [regexp]>"
+my $ARGS_HELP   = "<always> | <away_only> | <beep> | <nobeep> | <clear [regexp]>"
                  ."| <memo [text]> | <add [--color color] text>"
                  ."| <toggle> | <hide> | <show>"
                  ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end>";
@@ -139,6 +139,8 @@ Arguments:
 
     always:         enable highlights to bar always       (set config <c>away_only</c> = 'off').
     away_only:      enable highlights to bar if away only (set config <c>away_only</c> = 'on').
+    beep:           enable beeps on highlights (set config <c>beeps</c> = 'on').
+    nobeep:         disable beeps on highlights (set config <c>beeps</c> = 'off').
     <c>clear [regexp]</c>: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
                     If a perl regular expression is given, clear matched lines only.
     <c>memo [text]</c>:    Print a memo into bar '$SETTINGS{bar_name}'.
@@ -234,7 +236,7 @@ Config settings:
 EO_HELP
 
 my $COMPLETITION  =
-"always|away_only|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
+"always|away_only|beep|nobeep|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -494,6 +496,10 @@ sub newsbar {
             weechat::config_set_plugin( 'away_only', 'off' );
     } elsif ( $_cmd eq 'away_only' ) {
             weechat::config_set_plugin( 'away_only', 'on' );
+    } elsif ( $_cmd eq 'beep' ) {
+            weechat::config_set_plugin( 'beeps', 'on' );
+    } elsif ( $_cmd eq 'nobeep' ) {
+            weechat::config_set_plugin( 'beeps', 'off' );
     } elsif ( $_cmd eq 'show' or $_cmd eq 'hide' or $_cmd eq 'toggle' ) {
             _bar_toggle( $_cmd );
     } elsif ( $_cmd eq 'scroll_home' ) {
