@@ -19,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# newsbar for weechat version 0.2.7 or later
+# newsbar for weechat version 0.3.0 or later
 #
 # Listens for highlights and sends them to a bar.
 #
@@ -567,6 +567,7 @@ sub init_config {
 }
 
 sub highlights_config_changed {
+    my $datap = shift;
     my $option = shift;
     my $value = shift;
 
@@ -589,9 +590,10 @@ sub highlights_config_changed {
             weechat::config_set_plugin( 'away_only', 'off' );
             weechat::hook_config( $option, 'highlights_config_changed' );
         }
-        $Baway = "ALWAYS";
+        $Baway = " ALWAYS";
     }
 
+    weechat::bar_item_update($Bar_title_name);
     return weechat::WEECHAT_RC_OK;
 }
 
@@ -624,7 +626,8 @@ sub init_bar {
 
     unless (defined $Bar) {
         highlights_config_changed(
-            "plugins.var.perl." . $SCRIPT . ".on_away",
+            undef,
+            "plugins.var.perl." . $SCRIPT . ".away_only",
             weechat::config_get_plugin('away_only')
         );
         weechat::bar_item_new( $bar_name, "build_bar", "" );
@@ -792,7 +795,7 @@ if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "u
 
     init_config();
     init_bar();
-    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".on_away", 'highlights_config_changed', "" );
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".away_only", 'highlights_config_changed', "" );
 }
 
 # vim: ai ts=4 sts=4 et sw=4 foldmethod=marker :
