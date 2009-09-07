@@ -77,7 +77,10 @@
 #
 # Changelog:
 #
-# Version 0.01 2009-09-01
+# Version 0.03 2009-09-07
+#   - fix: new api arguments (arg1 data-pointer)
+#
+# Version 0.02 2009-09-01
 #   - quickfix for new api
 #
 # Version 0.01 2009-03-20
@@ -97,7 +100,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.02;
+my $Version = 0.03;
 
 # constants
 #
@@ -408,7 +411,7 @@ sub _print_formatted {
 # weechat stuff {{{
 # colored output of hilighted text to bar
 sub highlights_public {
-    my ( $bufferp, undef, undef, undef, $ishilight, $nick, $message ) = @_;
+    my ( undef, $bufferp, undef, undef, undef, $ishilight, $nick, $message ) = @_;
 
     if ( $ishilight == 1
         and weechat::config_get_plugin('show_highlights') eq 'on' )
@@ -438,16 +441,6 @@ sub highlights_public {
                 $nick    = $server;
                 $channel = weechat::color('magenta') . "[SERVER-MSG]";
             }
-#         } else { # FIXME disabled cause if debug is on '/help newsbar' fails (prints are eaten here?)
-#             if ( weechat::config_get_plugin('debug') eq 'on' ) {
-#                 $server  = weechat::buffer_get_string( $bufferp, "localvar_server" ) || 'UNDEF';
-#                 $channel = weechat::buffer_get_string( $bufferp, "localvar_channel" ) || 'UNDEF';
-#                 $btype ||= 'UNDEF';
-#                 weechat::print('', "$SCRIPT: WARNING: highlights_public: nothing done for localvar_type: '$btype'");
-#                 weechat::print('', "$SCRIPT:          * message came form nick:    '$nick'");
-#                 weechat::print('', "$SCRIPT:          * message came form server:  '$server'");
-#                 weechat::print('', "$SCRIPT:          * message came form channel: '$channel'");
-#             }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
     }
@@ -459,7 +452,7 @@ sub highlights_public {
 # server messages aren't shown in the bar
 # format: 'nick[privmsg] | message' (/msg)
 sub highlights_private {
-    my ( $nick, $message ) = ( $_[1] =~ /(.*?)\t(.*)/ );
+    my ( $nick, $message ) = ( $_[2] =~ /(.*?)\t(.*)/ );
 
     my $fmt = '%N%c';
 
