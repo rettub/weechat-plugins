@@ -93,7 +93,7 @@ my %SETTINGS = (
 
 # FIXME store server too?
 my $Last_query_nick = undef;
-my $deny_message = "Auto-Message: Right now I ignore all querys - perhaps not all :)";
+my $deny_message = "Auto-Message: Right now I ignore all queries - perhaps not all :)";
 
 sub DEBUG {weechat::print('', "***\t" . $_[0]);}
 
