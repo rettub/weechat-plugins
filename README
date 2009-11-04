@@ -1,7 +1,7 @@
 This repository provides my personal plugin scripts for weechat.
 
 - newsbar.pl         Writes highlights and other news into a bar
-- query_blocker.pl   Simple blocker for private message (i.e. spam)
+- query_blocker.pl   Simple blocker for private messages (i.e. spam)
 
 Tons of thanks to FlashCode for his great IRC client weechat.
 
