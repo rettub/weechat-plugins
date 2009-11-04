@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 #
-# sqb.pl - Simple IRC query (spam) blocker. - depends WeeChat >= v0.3.0
+# query_blocker.pl - Simple blocker for private messages (i.e. spam).
 #
 # -----------------------------------------------------------------------------
 # Copyright (c) 2009 by rettub <rettub@gmx.net>
@@ -49,36 +49,40 @@ use Data::Dumper;
 use warnings;
 use strict;
 
-my $SCRIPT      = 'sqb';
+my $SCRIPT      = 'query_blocker';
 my $AUTHOR      = 'rettub <rettub@gmx.net>';
 my $VERSION     = '0.1';
 my $LICENSE     = 'GPL3';
-my $DESCRIPTION = 'Simple query (spam) blocker';
-my $COMMAND     = "sqb";             # new command name
+my $DESCRIPTION = 'Simple blocker for private message (i.e. spam)';
+my $COMMAND     = "query_blocker";             # new command name
 my $ARGS_HELP   = "<on> | <off> | <status> | <list [last]> | <add [nick_1 [... [nick_n]]]> | <del nick_1 [... [nick_n]]> | <reload> | <blocked [clear]>";
 my $CMD_HELP    = <<EO_HELP;
 
 Arguments:
 
-    on/off:             toggle blocking of queries
-    status:             show blocking status
-    list [last]:        show whitelist, use last to show the nick blocked last
-    add/del [nicks]:    add/delete nick(s) to/from whitelist. (if no nick is given, 'add' will use the last blocked one)
-                        ('nicks' is a list of nicks seperated by spaces)
-    reload:             reload whitelist (useful if you changed the file-location i.e. to use a common file)
-    blocked [clear]:    list blocked nicks. If arg 'clear' is given all blocked nicks will be removed
+    on/off:             toggle blocking of queries.
+    status:             show blocking status.
+    list [last]:        show whitelist, use last to show the nick blocked last.
+    add/del [nicks]:    add/delete nick(s) to/from whitelist. (if no nick is given, 'add' will use the last blocked one).
+                        ('nicks' is a list of nicks seperated by spaces).
+    reload:             reload whitelist (useful if you changed the file-location i.e. to use a common file).
+    blocked [clear]:    list blocked nicks. If arg 'clear' is given all blocked nicks will be removed.
 
-By default all queries/msgs from nicks not in the whitelist will be blocked.
- - to allow queries sqb can be turned 'off'.
- - to allow queries from certains nicks, put them into the whitelist by '/$COMMAND add nick'.
- - to remove a nick from the whitelist, do '/$COMMAND del nick'.
+Script Options:
+    whitelist:          path/file-name to store/read nicks not to be blocked.
+    block_queries:      'on', 'off' to enable or disable $COMMAND.
 
-If a not allowed (blocked) nick sends you a query/msg, you will see a notice about nick, server and the message. Then the nick gets a 'blocked' state, which will prevent you from seeing his queries again till you restart WeeChat or you put the nick into the whitelist.
-(If you use the script 'newsbar', all notices about blocked queries will go there, otherwise they will appear in your server buffer).
+By default all private messages (/query, /msg) from nicks not in the whitelist will be blocked.
+ - to allow all private message, $SCRIPT can be disabled, type '/$COMMAND off'.
+ - to allow private messages from certain nicks, put them into the whitelist, type '/$COMMAND add nick'.
+ - to remove a nick from the whitelist, type '/$COMMAND del nick'.
 
-If a not allowed (blocked) nick will send you a query, he will be informed about blocking with an auto responce message. So he can ask you in the public channel to allow his queries.
+If a not allowed (blocked) nick sends you a private message, you will see a notice about nick, server and the message, but no buffer will be ceated. Then the nick gets a 'blocked' state, which will prevent you from seeing his queries again till you restart WeeChat or you put the nick into the whitelist.
+(If you use the script 'newsbar', all notices about blocked private messages will go there, otherwise they will appear in your server buffer).
 
-NOTE: If you load $COMMAND the first time, blocking of queries is 'off', you have to switch it to 'on' to enable blocking!
+If a not allowed (blocked) nick will send you a private message, he will be informed about blocking by an auto responce message. So he can ask you in the public channel to allow his private messages.
+
+NOTE: If you load $SCRIPT the first time, blocking of private messages is disabled, you have to enable blocking, type '/$COMMAND on'.
 EO_HELP
 
 my $COMPLETITION  = "on|off|status|list|add|del|reload|blocked";
@@ -88,7 +92,7 @@ my $CALLBACK_DATA = undef;
 # script options
 my %SETTINGS = (
     "block_queries" => "off",
-    "whitelist" =>  "query_whitelist.txt",
+    "whitelist" =>  "qb-whitelist.txt",
 );
 
 # FIXME store server too?
@@ -233,7 +237,7 @@ sub _add {
     }
 }
 
-sub sqb {
+sub query_blocker {
     my ( $data, $buffer, $args ) = ( $_[0], $_[1], $_[2] );
 
     if ( $args eq 'on' ) {
@@ -321,14 +325,14 @@ sub _get_nick {
     return $l;
 }
 
-sub sqb_query {
+sub qb_query {
     my $n = _get_nick($_[2]);
     _add($n) unless nick_allowed($n);
 
     return weechat::WEECHAT_RC_OK;
 }
 
-sub sqb_msg {
+sub qb_msg {
 #    my $nick = ($_[2] =~ /:(.+?)\!.+? PRIVMSG $my_nick :(\w.*)/ 
     my $n = _get_nick($_[2]);
     #_add($n) unless nick_allowed($n) or $_[2] =~ /$deny_message/;
@@ -341,19 +345,22 @@ sub sqb_msg {
 #
 if ( weechat::register( $SCRIPT, $AUTHOR, $VERSION, $LICENSE, $DESCRIPTION, "", "" ) ) {
     weechat::hook_command( $COMMAND, $DESCRIPTION, $ARGS_HELP, $CMD_HELP, $COMPLETITION, $CALLBACK, "" );
-    weechat::hook_command_run( '/query *', 'sqb_query', "" );
-    weechat::hook_command_run( '/msg *', 'sqb_msg', "" );
+    weechat::hook_command_run( '/query *', 'qb_query', "" );
+    weechat::hook_command_run( '/msg *', 'qb_msg', "" );
 
     weechat::hook_modifier( "irc_in_privmsg", "modifier_irc_in_privmsg", "" );
 
-    weechat::config_set_plugin( "whitelist", weechat::info_get( "weechat_dir", "" ) . "/" . $SETTINGS{"whitelist"})
-        if weechat::config_get_plugin( "whitelist" ) eq '';
+    if ( weechat::config_get_plugin("whitelist") eq '' ) {
+        my $wd = weechat::info_get( "weechat_dir", "" );
+        $wd =~ s/\/$//;
+        weechat::config_set_plugin( "whitelist", $wd . "/" . $SETTINGS{"whitelist"} );
+    }
     while ( my ( $option, $default_value ) = each(%SETTINGS) ) {
         weechat::config_set_plugin( $option, $default_value )
           if weechat::config_get_plugin($option) eq "";
     }
-    weechat::print( '', "sqb: whitelist: " . weechat::config_get_plugin( "whitelist" ) );
     whitelist_read();
+    weechat::print( '', "$COMMAND: loaded whitelist '" . weechat::config_get_plugin( "whitelist" ) . "'");
 }
 
 # vim: ai ts=4 sts=4 et sw=4 tw=0 foldmethod=marker :
