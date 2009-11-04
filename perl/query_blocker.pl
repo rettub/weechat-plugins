@@ -198,7 +198,7 @@ sub modifier_irc_in_privmsg {
             if ( $ps_name eq 'newsbar' ) {
                 info2newsbar( $server, $query_nick, $query_msg );
             } else {
-                info_as_notice( $my_nick, $query_nick, $query_msg );
+                info_as_notice( $server, $my_nick, $query_nick, $query_msg );
             }
 
             # auto responce msg to query_nick
@@ -350,6 +350,7 @@ if ( weechat::register( $SCRIPT, $AUTHOR, $VERSION, $LICENSE, $DESCRIPTION, "", 
 
     weechat::hook_modifier( "irc_in_privmsg", "modifier_irc_in_privmsg", "" );
 
+    # FIXME [bug #27936]
     if ( weechat::config_get_plugin("whitelist") eq '' ) {
         my $wd = weechat::info_get( "weechat_dir", "" );
         $wd =~ s/\/$//;
