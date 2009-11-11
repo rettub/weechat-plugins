@@ -793,7 +793,7 @@ sub build_bar_title {
 
 use constant {
     TIME     => 0,
-    TIME_CCL => 1,    #    NICK_COLOR_CODE_LEN
+    TIME_CCL => 1,    #    TIME_COLOR_CODE_LEN
     NICK     => 2,
     NICK_CCL => 3,    #    NICK_COLOR_CODE_LEN
     MSG      => 4,
@@ -801,18 +801,6 @@ use constant {
 
 # FIXME use columns (width in chars) of bar if possible
 sub _terminal_columns { my $c = `tput cols`; chomp $c; return $c; }
-
-# color codes starting with ctrl-Y[FB\*] (gui-color.h)
-# FIXME check for color error code: 'F-1'
-sub _colorcodes_len {
-    my $str = shift;
-
-    # XXX ^Y must be literal ctrl-v,ctrl-Y
-    my $COLOR_CODE      = "[FB][0-9a-fA-F]{2,2}";
-    my $COLOR_CODE_FGBG = "\*[0-9a-fA-F]{2,2},[0-9a-fA-F]{2,2}";
-
-    return ((scalar (() = $str =~ /$COLOR_CODE/g) * 4) + (scalar (() = $str =~ /$COLOR_CODE_FGBG/g) * 7));
-}
 
 sub build_bar {
     my $str = "";
@@ -826,12 +814,12 @@ sub build_bar {
         ($f[$i][NICK], $f[$i][MSG]) = split(/\t/, $_->[1]);
         $f[$i][TIME]                = $_->[0];                          # [date ] time
 
-        $f[$i][TIME_CCL] = _colorcodes_len($f[$i][TIME]);               # length of color codes
-        my $tlen_c       = length($f[$i][TIME]) -  $f[$i][TIME_CCL];    # length without color codes
+        my $tlen_c       = length(weechat::string_remove_color($f[$i][TIME], ""));    # length without color codes
+        $f[$i][TIME_CCL] = length($f[$i][TIME]) - $tlen_c;               # length of color codes
         $tlen_max        = $tlen_c if $tlen_c > $tlen_max;              # new max length
 
-        $f[$i][NICK_CCL] = _colorcodes_len($f[$i][NICK]);
-        my $nlen_c       = length($f[$i][NICK]) - $f[$i][NICK_CCL];
+        my $nlen_c       = length(weechat::string_remove_color($f[$i][NICK], ""));
+        $f[$i][NICK_CCL] = length($f[$i][NICK]) - $nlen_c;
         $nlen_max        = $nlen_c if $nlen_c > $nlen_max;
         $i++;
     }
