@@ -76,6 +76,31 @@
 # -----------------------------------------------------------------------------
 #
 # Changelog:
+##########################
+#
+# Version 0.05 2009-11-11
+#   * new options:
+#     - beep_duration: beep duration in milliseconds
+#     - beep_cmd:      command to be executed on 'beeps' (can be any cmd)
+#     - beep_ssh_host: host (and optional user) where remote beeps should be
+#                      executed
+#     - beep_remote:   beep on a remote host
+#     - beep_duration: duration of beep
+#     - beep_freq_channel,
+#       beep_freq_private,
+#       beep_freq_msg: beep frequences
+#
+#   * new commands:
+#     - beep_local:    execute beep cmd on localhost
+#     - beep_remote:   execute beep cmd on remote host using ssh
+#     - beep, nobeep:  toggle beeps
+#
+#   - show state of config var: away_only
+#   - use of global weechat-options for colors
+#   - use same color for nicks as Weechat does
+#
+# Version 0.04 2009-09-07
+#   - different beeps on highlights, can be turned on/off
 #
 # Version 0.03 2009-09-07
 #   - fix: new api arguments (arg1 data-pointer)
@@ -100,7 +125,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.04;
+my $Version = 0.05;
 
 # constants
 #
