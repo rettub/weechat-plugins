@@ -278,11 +278,8 @@ my $Beep_freq_msg = 1000;
 my $Beep_remote = '';
 
 # helper functions {{{
-# FIXME hardcoded max nick-color value to prevent a forever-loop in init_config()
-# be ready for 256 colors
+# XXX track changes for irc_nick_find_color(),  be ready for 256 colors
 {
-my $_Ncol    = undef;
-my $_MIN_COL = 10;
 
 sub DEBUG {weechat::print('', "***\t" . $_[0]);}
 
@@ -304,41 +301,24 @@ sub _beep {
     }
 }
 
-sub _init_max_colors {
-    if ( !defined $_Ncol ) {
-
-        # FIXME hardcoded max colors == 15 to prevent a forever-loop
-        for ( $_Ncol = 1 ; $_Ncol < 15 ; ) {
-            last
-              unless weechat::config_get(
-                'weechat.color.chat_nick_color' . sprintf( "%02d", $_Ncol ) );
-            $_Ncol++;
-        }
-
-        $_Ncol--;
-        weechat::print( '',
-            "$SCRIPT: warning: bad max colors: $_Ncol should be '$_MIN_COL'" )
-          if $_Ncol < $_MIN_COL;
+# 
+# irc_nick_find_color: find a color for a nick (according to nick letters)
+# (ported to perl from WeeChats source)
+sub irc_nick_find_color
+{
+    my @nick_name = split(//, $_[0]);
+    
+    my $color = 0;
+    foreach my $c (split(//, $_[0]))
+    {
+        $color += ord($c);
     }
-}
+    $color = ($color %
+             weechat::config_integer (weechat::config_get ("weechat.look.color_nicks_number")));
 
-sub _color_index {
-    my $s = shift;
-    my ( $h, $v ) = ( 0, 0 );
-
-    map { $h += ord($_) } split( //, $s );
-
-    while ( $h > $_Ncol ) {
-        $v = 0;
-        map { $v += $_ } split( //, "$h" );
-        $h = $v;
-    }
-
-    return weechat::config_color(
-        weechat::config_get(
-            'weechat.color.chat_nick_color' . sprintf( "%02d", $h )
-        )
-    );
+    my $color_name = sprintf("chat_nick_color%02d", $color + 1);
+    
+    return weechat::color ($color_name);
 }
 
 sub _color_it { return weechat::color(_color_index($_[0])); }
@@ -348,9 +328,9 @@ sub _colored {
     my $np ='[\@+^]';
     my ($b) = ($a =~ /^$np?(.*)/);
 
-    return weechat::color('lightgreen') . '@' . _color_it($b) . $b . weechat::color('default') if $a =~ /^\@/;
-    return weechat::color('yellow') . '+' . _color_it($b) . $b . weechat::color('default') if $a =~ /^\+/;
-    return _color_it($b) . $a . weechat::color('default')
+    return weechat::color('lightgreen') . '@' . irc_nick_find_color($b) . $b . weechat::color('reset') if $a =~ /^\@/;
+    return weechat::color('yellow') . '+' . irc_nick_find_color($b) . $b . weechat::color('reset') if $a =~ /^\+/;
+    return irc_nick_find_color($b) . $a . weechat::color('reset')
 }
 
 sub _color_str {
@@ -600,7 +580,6 @@ sub newsbar {
 }
 
 sub init_config {
-    _init_max_colors();
 
     while ( my ( $option, $default_value ) = each(%SETTINGS) ) {
         weechat::config_set_plugin( $option, $default_value )
