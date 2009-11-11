@@ -335,7 +335,7 @@ sub _colored {
 
 sub _color_str {
     my ($color_name, $str) = @_;
-    weechat::color($color_name) . $str  . weechat::color('default');
+    weechat::color($color_name) . $str  . weechat::color('reset');
 }
 
 sub _bar_toggle {
@@ -387,9 +387,11 @@ sub _bar_clear {
 
 sub _bar_date_time {
     my $dt = strftime( weechat::config_string (weechat::config_get('weechat.look.buffer_time_format')), localtime);
-    # FIXME user config
-    my $tdelim = weechat::color ("yellow") . ":" . weechat::color ("default");
-    my $ddelim = weechat::color ("yellow") . "-" . weechat::color ("default");
+
+    my $dc     = weechat::color('chat_time_delimiters');
+    my $tdelim = $dc . ":" . weechat::color ("reset");
+    my $ddelim = $dc . "-" . weechat::color ("reset");
+    
     $dt =~ s/:/$tdelim/g; 
     $dt =~ s/-/$ddelim/g; 
 
@@ -825,7 +827,7 @@ sub build_bar {
     }
 
     # FIXME use user config color
-    my $delim     = weechat::color ("green") . " | " . weechat::color ("default");
+    my $delim     = weechat::color ("chat_delimiters") . " | " . weechat::color ("default");
 
     $Text::Wrap::columns  = _terminal_columns() - ($nlen_max + $tlen_max + 3); # 3 := length of delim without color codes
     $Text::Wrap::unexpand = 0;   # don't turn spaces into tabs
