@@ -111,6 +111,10 @@ my %SETTINGS = (
     "beep_freq_channel"      => "6000",
     "beep_freq_private"      => "6000",
     "beep_freq_msg"          => "6000",
+    "beep_duration"          => "20",
+    "beep_cmd"               => "beep -f %F -l %L",
+    "beep_ssh_host"          => "",
+    "beep_remote"            => "off",
     "show_highlights"        => "on",
     "away_only"              => "off",
     "format_public"          => '%N.%C@%s',
@@ -131,9 +135,9 @@ my %SETTINGS = (
 my $SCRIPT      = "newsbar";
 my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
-my $DESCRIPTION = "Listens for highlights on all your channels and writes them and/or text given by commands into bar 'NewsBar'. If the bar is currently hidden, it will be shown automatically at top of weechat.";
+my $DESCRIPTION = "Print highlights or text given by commands into bar 'NewsBar'. Auto popup on top of weechat if needed. 'beeps' can be executed local or remote";
 my $COMMAND     = "newsbar";             # new command name
-my $ARGS_HELP   = "<always> | <away_only> | <beep> | <nobeep> | <clear [regexp]>"
+my $ARGS_HELP   = "<always> | <away_only> | <beep> | <nobeep> | <beep_local> | <beep_remote> | <clear [regexp]>"
                  ."| <memo [text]> | <add [--color color] text>"
                  ."| <toggle> | <hide> | <show>"
                  ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end>";
@@ -144,6 +148,8 @@ Arguments:
     away_only:      enable highlights to bar if away only (set config <c>away_only</c> = 'on').
     beep:           enable beeps on highlights (set config <c>beeps</c> = 'on').
     nobeep:         disable beeps on highlights (set config <c>beeps</c> = 'off').
+    beep_local:     execute beep cmd on localhost (set config <c>beeps_remote</c> = 'off').
+    beep_remote:    execute beep cmd on remote host using ssh (set config <c>beeps_remote</c> = 'on').
     <c>clear [regexp]</c>: Clear bar '$SETTINGS{bar_name}'. Clear all messages.
                     If a perl regular expression is given, clear matched lines only.
     <c>memo [text]</c>:    Print a memo into bar '$SETTINGS{bar_name}'.
@@ -201,6 +207,15 @@ Config settings:
                             default: '$SETTINGS{beep_freq_private}'
     beep_freq_msg:          frequence of beep (highlighted on a private channel).
                             default: '$SETTINGS{beep_freq_msg}'
+    beep_duration:          beep duration in milliseconds
+                            default: '$SETTINGS{beep_duration}'
+    beep_cmd:               command to be executed on 'beeps'
+                            default: '$SETTINGS{beep_cmd}'
+    beep_remote:            beep on a remote host (see: option <c>beep_ssh_host</c>)
+                            default: '$SETTINGS{beep_remote}'
+    beep_ssh_host:          host (and optional user) where remote beeps should
+                            be executed
+                            default: '$SETTINGS{beep_ssh_host}'
     away_only:              Collect highlights only if you're away.
                             default: '$SETTINGS{away_only}'
     show_highlights:        Enable/disable handling of public messages. ('on'/'off')
@@ -245,7 +260,7 @@ Config settings:
 EO_HELP
 
 my $COMPLETITION  =
-"always|away_only|beep|nobeep|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
+"always|away_only|beep|nobeep|beep_local|beep_remote|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -260,6 +275,7 @@ my $Beeps="";
 my $Beep_freq_ch = 1000;
 my $Beep_freq_pr = 1000;
 my $Beep_freq_msg = 1000;
+my $Beep_remote = '';
 
 # helper functions {{{
 # FIXME hardcoded max nick-color value to prevent a forever-loop in init_config()
@@ -271,14 +287,21 @@ my $_MIN_COL = 10;
 sub DEBUG {weechat::print('', "***\t" . $_[0]);}
 
 sub _beep {
-    my $arg = "beep -f " . $_[0] . " -l " . $_[1];
+    my $arg = weechat::config_get_plugin('beep_cmd');
+    $arg =~ s/%F/$_[0]/;
+    $arg =~ s/%L/$_[1]/;
+    my $ssh_host = weechat::config_get_plugin('beep_ssh_host');
+    my $ssh_cmd  = "ssh $ssh_host";                             # FIXME optiion?
 
-    system($arg)
-      if (
-        weechat::config_string(
-            weechat::config_get('plugins.var.perl.newsbar.beeps')
-        ) eq 'on'
-      );
+    if ( weechat::config_get_plugin('beeps') eq 'on' ) {
+        if ( $ssh_host ne ''
+            and weechat::config_get_plugin('beep_remote') eq 'on' )
+        {
+            system("$ssh_cmd $arg 2>/dev/null 1>&2 &");
+        } else {
+            system("$arg 2>/dev/null 1>&2 &");
+        }
+    }
 }
 
 sub _init_max_colors {
@@ -490,7 +513,7 @@ sub highlights_private {
     if ( weechat::config_get_plugin('show_priv_msg') eq "on"
         and $nick ne '--' )
     {
-        _beep( $Beep_freq_msg, 20 );
+        _beep( $Beep_freq_msg, weechat::config_get_plugin('beep_duration') );
         _print_formatted( $fmt, $message, $nick,
             weechat::color('red') . "[privmsg]", undef );
     }
@@ -515,6 +538,10 @@ sub newsbar {
             weechat::config_set_plugin( 'beeps', 'on' );
     } elsif ( $_cmd eq 'nobeep' ) {
             weechat::config_set_plugin( 'beeps', 'off' );
+    } elsif ( $_cmd eq 'beep_remote' ) {
+            weechat::config_set_plugin( 'beep_remote', 'on' );
+    } elsif ( $_cmd eq 'beep_local' ) {
+            weechat::config_set_plugin( 'beep_remote', 'off' );
     } elsif ( $_cmd eq 'show' or $_cmd eq 'hide' or $_cmd eq 'toggle' ) {
             _bar_toggle( $_cmd );
     } elsif ( $_cmd eq 'scroll_home' ) {
@@ -580,10 +607,10 @@ sub init_config {
           if weechat::config_get_plugin($option) eq "";
     }
 
-    $Beep_freq_ch = weechat::config_get_plugin('beep_freq_channel');
-    $Beep_freq_pr = weechat::config_get_plugin('beep_freq_private');
+    $Beep_freq_ch  = weechat::config_get_plugin('beep_freq_channel');
+    $Beep_freq_pr  = weechat::config_get_plugin('beep_freq_private');
     $Beep_freq_msg = weechat::config_get_plugin('beep_freq_msg');
-
+    $Beeps         = weechat::config_get_plugin('beeps');
 }
 
 sub beepfreq_config_changed {
@@ -627,6 +654,22 @@ sub beeps_config_changed {
             weechat::hook_config( $option, 'beeps_config_changed' );
         }
         $Beeps = "off";
+    }
+
+    weechat::bar_item_update($Bar_title_name);
+    return weechat::WEECHAT_RC_OK;
+}
+
+sub beep_remote_config_changed {
+    my $datap = shift;
+    my $option = shift;
+    my $value = shift;
+
+    my $beep_remote;
+    if ( $value eq 'on' ) {
+        $Beep_remote = " on";
+    } else {
+        $Beep_remote = "off";
     }
 
     weechat::bar_item_update($Bar_title_name);
@@ -691,6 +734,7 @@ sub init_bar {
     $Bar_hidden = weechat::config_get_plugin('bar_hidden_on_start')
       unless defined $Bar_hidden;
 
+    $Beep_remote = weechat::config_get_plugin('beep_remote');
     $Beeps = weechat::config_get_plugin('beeps');
     $Beeps = ' ' . $Beeps if $Beeps eq 'on';
 
@@ -755,7 +799,7 @@ sub build_bar_title {
     my $title =
         weechat::color(",blue")
       . weechat::config_get_plugin('bar_title')
-      . ": [%I] [active: %A | beep: %B | most recent: first]";
+      . ": [%I] [active: %A | beep: %B (remote: %R) | most recent: first]";
 
     my $i = @Bstr;
     $i ||= 0;
@@ -763,6 +807,7 @@ sub build_bar_title {
     $title =~ s/%A/$Baway/;
     $title =~ s/%I/$i/;
     $title =~ s/%B/$Beeps/;
+    $title =~ s/%R/$Beep_remote/;
 
     return $title;
 }
@@ -869,6 +914,7 @@ if ( weechat::register(  $SCRIPT,  $AUTHOR, $Version, $LICENCE, $DESCRIPTION, "u
     weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".away_only", 'highlights_config_changed', "" );
     weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".beep_freq_*", 'beepfreq_config_changed', "" );
     weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".beeps", 'beeps_config_changed', "" );
+    weechat::hook_config( "plugins.var.perl." . $SCRIPT . ".beep_remote", 'beep_remote_config_changed', "" );
 }
 
 # vim: ai ts=4 sts=4 et sw=4 foldmethod=marker :
