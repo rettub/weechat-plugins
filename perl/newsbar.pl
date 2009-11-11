@@ -346,8 +346,6 @@ sub irc_nick_find_color
     return weechat::color ($color_name);
 }
 
-sub _color_it { return weechat::color(_color_index($_[0])); }
-
 sub _colored {
     my $a = shift;
     my $np ='[\@+^]';
