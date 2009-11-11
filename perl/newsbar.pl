@@ -667,18 +667,13 @@ sub beeps_config_changed {
 }
 
 sub beep_remote_config_changed {
-    my $datap = shift;
-    my $option = shift;
-    my $value = shift;
+#    my $datap = shift;
+#    my $option = shift;
+#    my $value = shift;
 
-    my $beep_remote;
-    if ( $value eq 'on' ) {
-        $Beep_remote = " on";
-    } else {
-        $Beep_remote = "off";
-    }
-
+    $Beep_remote = $_[2] eq 'on' ? '(remote)' : '(local) ';
     weechat::bar_item_update($Bar_title_name);
+
     return weechat::WEECHAT_RC_OK;
 }
 
@@ -740,7 +735,7 @@ sub init_bar {
     $Bar_hidden = weechat::config_get_plugin('bar_hidden_on_start')
       unless defined $Bar_hidden;
 
-    $Beep_remote = weechat::config_get_plugin('beep_remote');
+    $Beep_remote = weechat::config_get_plugin('beep_remote') eq 'on' ? '(remote)' : '(local) ';
     $Beeps = weechat::config_get_plugin('beeps');
     $Beeps = ' ' . $Beeps if $Beeps eq 'on';
 
@@ -805,7 +800,7 @@ sub build_bar_title {
     my $title =
         weechat::color(",blue")
       . weechat::config_get_plugin('bar_title')
-      . ": [%I] [active: %A | beep: %B (remote: %R) | most recent: first]";
+      . ": [%I] [active: %A | beep: %B %R | most recent: first]";
 
     my $i = @Bstr;
     $i ||= 0;
