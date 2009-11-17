@@ -486,11 +486,11 @@ sub highlights_public {
 
         if ( $btype eq 'channel' ) {
             $fmt = weechat::config_get_plugin('format_public');
-            _beep($Beep_freq_ch, 20);
+            _beep($Beep_freq_ch, weechat::config_get_plugin('beep_duration') );
         } elsif ( $btype eq 'private' ) {
             $channel = '';
             $fmt     = weechat::config_get_plugin('format_private');
-            _beep($Beep_freq_pr, 20);
+            _beep($Beep_freq_pr, weechat::config_get_plugin('beep_duration') );
 
         } elsif ( $btype eq 'server' ) {
             if ( weechat::config_get_plugin('show_priv_server_msg') eq 'on' ) {
@@ -498,7 +498,7 @@ sub highlights_public {
                 $fmt     = '%N%c';
                 $nick    = $server;
                 $channel = weechat::color('magenta') . "[SERVER-MSG]";
-                _beep(1000, 20);
+                _beep(1000, weechat::config_get_plugin('beep_duration') );
             }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
