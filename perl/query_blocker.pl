@@ -241,11 +241,15 @@ sub _add {
 my $Block_query    = undef;
 my $Block_msg      = undef;
 my $Block_modifier = undef;
+my $Hooked = 0;
+
+sub qb_hooked { $Hooked };
 
 sub qb_hook {
     $Block_query = weechat::hook_command_run( '/query *', 'qb_query', "" );
     $Block_msg   = weechat::hook_command_run( '/msg *',   'qb_msg',   "" );
     $Block_modifier = weechat::hook_modifier( "irc_in_privmsg", "modifier_irc_in_privmsg", "" );
+    $Hooked=1;
 }
 
 sub qb_unhook {
@@ -255,28 +259,41 @@ sub qb_unhook {
     $Block_query    = undef;
     $Block_msg      = undef;
     $Block_modifier = undef;
+    $Hooked=0;
 }
+}
+
+sub toggled_by_set {
+    my ( $script, $option, $value ) = @_;
+
+    if ( $value ne 'on' ) { # all values different to 'on' will disable blocking
+        if ( $value ne 'off' ) {
+            weechat::config_set_plugin( $option, "off" );
+            DEBUG("wrong value for option '$option', falling back to 'off'");
+        }
+        if ( qb_hooked() ) {    # enabled?
+            qb_unhook();
+            weechat::print( '', "$COMMAND: disabled" );
+        } else {
+            weechat::print( '', "$COMMAND: already disabled" );
+        }
+    } else {    # enable blocking
+        unless ( qb_hooked() ) {
+            qb_hook();
+            weechat::print( '', "$COMMAND: private messages will be blocked" );
+        } else {
+            weechat::print( '', "$COMMAND: private messages already blocked" );
+        }
+    }
+
+    return weechat::WEECHAT_RC_OK;
 }
 
 sub query_blocker {
     my ( $data, $buffer, $args ) = ( $_[0], $_[1], $_[2] );
 
-    if ( $args eq 'on' ) {
-        unless (weechat::config_get_plugin('block_queries') eq "on") {
-            weechat::config_set_plugin( 'block_queries', 'on' );
-            qb_hook();
-            weechat::print( '', "$COMMAND: private messages will be blocked");
-        } else {
-            weechat::print( '', "$COMMAND: private messages blocked already");
-        }
-    } elsif ( $args eq 'off' ) {
-        unless (weechat::config_get_plugin('block_queries') eq "off") {
-            weechat::config_set_plugin( 'block_queries', 'off' );
-            qb_unhook();
-            weechat::print( '', "$COMMAND: disabled");
-        } else {
-            weechat::print( '', "$COMMAND: was disabled already");
-        }
+    if ( $args =~ /^o(n|ff)$/ ) {
+        weechat::config_set_plugin( 'block_queries', $args );
     } elsif ( $args eq 'status' ) {
         if ( weechat::config_get_plugin( 'block_queries') eq 'on' ) {
             weechat::print( '', "$COMMAND: private messages will be blocked");
@@ -381,6 +398,8 @@ if ( weechat::register( $SCRIPT, $AUTHOR, $VERSION, $LICENSE, $DESCRIPTION, "", 
     }
     whitelist_read();
     weechat::print( '', "$COMMAND: loaded whitelist '" . weechat::config_get_plugin( "whitelist" ) . "'");
+
+    weechat::hook_config( "plugins.var.perl.$SCRIPT.block_queries", 'toggled_by_set', $SCRIPT );
 
     if (weechat::config_get_plugin('block_queries') eq "on") {
         qb_hook();
