@@ -237,31 +237,38 @@ sub _add {
     }
 }
 
+# handle hooks {{{
 {
-my $Block_query    = undef;
-my $Block_msg      = undef;
-my $Block_modifier = undef;
-my $Hooked = 0;
+my %Hooks = undef;
 
-sub qb_hooked { $Hooked };
+sub qb_hooked { defined %Hooks };
 
 sub qb_hook {
-    $Block_query = weechat::hook_command_run( '/query *', 'qb_query', "" );
-    $Block_msg   = weechat::hook_command_run( '/msg *',   'qb_msg',   "" );
-    $Block_modifier = weechat::hook_modifier( "irc_in_privmsg", "modifier_irc_in_privmsg", "" );
-    $Hooked=1;
+    return 1 if qb_hooked();
+
+    $Hooks{query}    = weechat::hook_command_run( '/query *', 'qb_query', "" );
+    $Hooks{msg}      = weechat::hook_command_run( '/msg *',   'qb_msg',   "" );
+    $Hooks{modifier} = weechat::hook_modifier( "irc_in_privmsg", "modifier_irc_in_privmsg", "" );
+
+    # FIXME handle hook errors (hook_ returns NULL := '')
+    DEBUG("cant hook command '/query'")          if $Hooks{query}    eq '';
+    DEBUG("cant hook command '/msg'")            if $Hooks{msg}      eq '';
+    DEBUG("cant hook modifier 'irc_in_privmsg'") if $Hooks{modifier} eq '';
+
+    return 0;
 }
 
 sub qb_unhook {
-    weechat::unhook( $Block_query );
-    weechat::unhook( $Block_msg );
-    weechat::unhook( $Block_modifier );
-    $Block_query    = undef;
-    $Block_msg      = undef;
-    $Block_modifier = undef;
-    $Hooked=0;
+    return 1 qb_hooked();
+
+    weechat::unhook( $Hooks{query} );
+    weechat::unhook( $Hooks{msg} );
+    weechat::unhook( $Hooks{modifier} );
+    %Hooks = undef;
+
+    return 0;
 }
-}
+} # }}}
 
 sub toggled_by_set {
     my ( $script, $option, $value ) = @_;
