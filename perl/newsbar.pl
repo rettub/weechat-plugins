@@ -498,7 +498,7 @@ sub highlights_public {
                 $fmt     = '%N%c';
                 $nick    = $server;
                 $channel = weechat::color('magenta') . "[SERVER-MSG]";
-                _beep(1000, weechat::config_get_plugin('beep_duration') );
+                _beep($Beep_freq_msg, weechat::config_get_plugin('beep_duration') );
             }
         }
         _print_formatted( $fmt, $message, $nick, $channel, $server ) if $fmt;
