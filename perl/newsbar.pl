@@ -652,10 +652,7 @@ sub beeps_config_changed {
                 . _color_str('cyan', "off" ) . "'."
             );
 
-            # FIXME unhook/rehook needed?
-            weechat::unhook( 'beeps_config_changed' );
             weechat::config_set_plugin( 'beeps', 'off' );
-            weechat::hook_config( $option, 'beeps_config_changed' );
         }
         $Beeps = "off";
     }
@@ -694,10 +691,7 @@ sub highlights_config_changed {
                 . _color_str('cyan', "off" ) . "'."
             );
 
-            # FIXME unhook/rehook needed?
-            weechat::unhook( 'highlights_config_changed' );
             weechat::config_set_plugin( 'away_only', 'off' );
-            weechat::hook_config( $option, 'highlights_config_changed' );
         }
         $Baway = " ALWAYS";
     }
