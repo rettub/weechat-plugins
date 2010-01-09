@@ -239,9 +239,9 @@ sub _add {
 
 # handle hooks {{{
 {
-my %Hooks = undef;
+my %Hooks;
 
-sub qb_hooked { defined %Hooks };
+sub qb_hooked { %Hooks };
 
 sub qb_hook {
     return 1 if qb_hooked();
@@ -259,12 +259,13 @@ sub qb_hook {
 }
 
 sub qb_unhook {
-    return 1 qb_hooked();
+    return 1 unless qb_hooked();
 
+    # FIXME handle hook errors (hook_ returns NULL := '')
     weechat::unhook( $Hooks{query} );
     weechat::unhook( $Hooks{msg} );
     weechat::unhook( $Hooks{modifier} );
-    %Hooks = undef;
+    undef %Hooks;
 
     return 0;
 }
