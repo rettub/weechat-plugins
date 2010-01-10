@@ -57,6 +57,8 @@ my $DESCRIPTION = 'Simple blocker for private message (i.e. spam)';
 my $COMMAND     = "query_blocker";             # new command name
 my $ARGS_HELP   = "<on> | <off> | <status> | <list [last]> | <add [nick_1 [... [nick_n]]]> | <del nick_1 [... [nick_n]]> | <reload> | <blocked [clear]>";
 my $CMD_HELP    = <<EO_HELP;
+If a not allowed (blocked) nick sends you a private message, you will see a notice about nick, server and the message, but no buffer will be created. Then the nick gets a 'blocked' state, which will prevent you from seeing his queries again till you restart WeeChat, reload the script or you put the nick into the whitelist (if newsbar.pl is running notices will be printed there). In addition the user will be informed about blocking by an auto responce message when he gains the blocked state. So he can ask you in the public channel to allow his private messages.
+If you send a private message to a user, his nick will be added to the whitelist.
 
 Arguments:
 
@@ -84,11 +86,6 @@ By default all private messages (/query, /msg) from nicks not in the whitelist w
  - to allow all private message, $SCRIPT can be disabled, type '/$COMMAND off'.
  - to allow private messages from certain nicks, put them into the whitelist, type '/$COMMAND add nick'.
  - to remove a nick from the whitelist, type '/$COMMAND del nick'.
-
-If a not allowed (blocked) nick sends you a private message, you will see a notice about nick, server and the message, but no buffer will be ceated. Then the nick gets a 'blocked' state, which will prevent you from seeing his queries again till you restart WeeChat or you put the nick into the whitelist.
-(If you use the script 'newsbar', all notices about blocked private messages will go there, otherwise they will appear in your server buffer).
-
-If a not allowed (blocked) nick will send you a private message, he will be informed about blocking by an auto responce message. So he can ask you in the public channel to allow his private messages.
 
 NOTE: If you load $SCRIPT the first time, blocking of private messages is disabled, you have to enable blocking, type '/$COMMAND on'.
 EO_HELP
@@ -200,7 +197,6 @@ sub modifier_irc_in_privmsg {
 
     my $my_nick = weechat::info_get( 'irc_nick', $server );
 
-    #  $sender: :rettub!n=amar@dtmd-4d0bf1cd.pool.mediaWays.net PRIVMSG jhd :msg oooo
     if ( $arg =~ m/:(.+?)\!.+? PRIVMSG $my_nick :(\w.*)/ ) {
         my $query_nick = $1;
         my $query_msg  = $2;
