@@ -144,11 +144,12 @@ sub whitelist_save {
     close WL;
 }
 
+# newsbar api staff {{{
 sub info2newsbar {
-    my ( $server, $nick, $message ) = @_;
+    my ( $color, $category, $server, $nick, $message ) = @_;
 
     weechat::command( '',
-            "/newsbar  add --color lightred [QUERY-WARN]\t"
+            "/newsbar  add --color $color $category\t"
           . irc_nick_find_color($nick)
           . $nick
           . weechat::color('reset') . '@'
@@ -160,11 +161,19 @@ sub info2newsbar {
           . weechat::color('reset')
           . $message );
     weechat::command( '',
-            "/newsbar  add --color lightred [QUERY-WARN]\t"
+            "/newsbar  add --color $color $category\t"
           . "To allow the query, type: "
           . weechat::color('bold')
           . "/$COMMAND add " . weechat::color('reset') . $nick );
 }
+
+sub newsbar {
+    my $info_list = weechat::infolist_get( "perl_script", "name", "newsbar" );
+    weechat::infolist_next($info_list);
+
+    return weechat::infolist_string( $info_list, "name" ) eq 'newsbar';
+}
+#}}}
 
 # FIXME server needed?
 sub info_as_notice {
@@ -191,12 +200,8 @@ sub modifier_irc_in_privmsg {
         $Last_query_nick = $query_nick;
 
         unless ( exists $Blocked{$query_nick} ) {
-            my $info_list = weechat::infolist_get( "perl_script", "name", "newsbar" );
-            weechat::infolist_next($info_list);
-            my $ps_name = weechat::infolist_string( $info_list, "name" );
-
-            if ( $ps_name eq 'newsbar' ) {
-                info2newsbar( $server, $query_nick, $query_msg );
+            if ( newsbar() ) {
+                info2newsbar( 'lightred', '[QUERY-WARN]', $server, $query_nick, $query_msg );
             } else {
                 info_as_notice( $server, $my_nick, $query_nick, $query_msg );
             }
