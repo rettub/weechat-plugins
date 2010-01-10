@@ -76,6 +76,9 @@ Script Options:
                          default: 'Right now I ignore all queries - perhaps not all :)'
     auto_message_prefix: Prefix for auto message, may not be empty!
                          default: 'Auto-Message: '
+    quiet:               'on', 'off'. If 'on' send auto reply about blocking but don't send notice to you.
+                         default: 'off'.
+    show_hint:           'on', 'off'. Show hint how to allow queries for nick. default 'on'.
 
 By default all private messages (/query, /msg) from nicks not in the whitelist will be blocked.
  - to allow all private message, $SCRIPT can be disabled, type '/$COMMAND off'.
@@ -97,6 +100,8 @@ my $CALLBACK_DATA = undef;
 # script options
 my %SETTINGS = (
     "block_queries" => "off",
+    "quiet"         => 'off',
+    "show_hint"     => 'on',
     "whitelist"     => "qb-whitelist.txt",
     "auto_message"  => "Right now I ignore all queries - perhaps not all :)",
     "auto_message_prefix" => "Auto-Message: ",
@@ -170,8 +175,7 @@ sub info2newsbar {
     weechat::command( '',
             "/newsbar  add --color $color $category\t"
           . "To allow the query, type: "
-          . weechat::color('bold')
-          . "/$COMMAND add " . weechat::color('reset') . $nick );
+          . "/$COMMAND add $nick" ) unless (weechat::config_get_plugin('show_hint') eq 'off');
 }
 
 sub newsbar {
@@ -187,7 +191,8 @@ sub info_as_notice {
     my ( $server, $my_nick, $nick, $message ) = @_;
 
     weechat::command( '', "/notice -server $server $my_nick $nick Tries to start aquery: $message" );
-    weechat::command( '', "/notice -server $server $my_nick $nick To allow the query type: /$COMMAND add $nick" );
+    weechat::command( '', "/notice -server $server $my_nick $nick To allow the query type: /$COMMAND add $nick" )
+      unless (weechat::config_get_plugin('show_hint') eq 'off');
 }
 
 sub modifier_irc_in_privmsg {
@@ -206,10 +211,12 @@ sub modifier_irc_in_privmsg {
         $Last_query_nick = $query_nick;
 
         unless ( exists $Blocked{$query_nick} ) {
-            if ( newsbar() ) {
-                info2newsbar( 'lightred', '[QUERY-WARN]', $server, $query_nick, $query_msg );
-            } else {
-                info_as_notice( $server, $my_nick, $query_nick, $query_msg );
+            unless (weechat::config_get_plugin('quiet') eq 'on') {
+                if ( newsbar() ) {
+                    info2newsbar( 'lightred', '[QUERY-WARN]', $server, $query_nick, $query_msg );
+                } else {
+                    info_as_notice( $server, $my_nick, $query_nick, $query_msg );
+                }
             }
 
             # auto responce msg to query_nick
