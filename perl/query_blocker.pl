@@ -183,7 +183,6 @@ sub info_as_notice {
     weechat::command( '', "/notice -server $server $my_nick $nick To allow the query type: /$COMMAND add $nick" );
 }
 
-# FIXME do not send a 'blocked' message to query_nick if done already
 sub modifier_irc_in_privmsg {
     my ( $data, $signal, $server, $arg ) = @_;
 
