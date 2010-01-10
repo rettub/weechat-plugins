@@ -35,9 +35,15 @@
 # -----------------------------------------------------------------------------
 # History:
 #
+# 2010-01-10, rettub:
+#     version 0.2:
+#     new options: quiet, show_hint
+#                  auto_message, auto_message_prefix
+#
 # 2009-11-03, rettub:
 #     version 0.1: initial release
 #
+# -----------------------------------------------------------------------------
 # FIXME
 #   - add 'mynick' to list - needed?
 #
@@ -51,7 +57,7 @@ use strict;
 
 my $SCRIPT      = 'query_blocker';
 my $AUTHOR      = 'rettub <rettub@gmx.net>';
-my $VERSION     = '0.1';
+my $VERSION     = '0.2';
 my $LICENSE     = 'GPL3';
 my $DESCRIPTION = 'Simple blocker for private message (i.e. spam)';
 my $COMMAND     = "query_blocker";             # new command name
