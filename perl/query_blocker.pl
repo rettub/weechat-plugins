@@ -60,17 +60,22 @@ my $CMD_HELP    = <<EO_HELP;
 
 Arguments:
 
-    on/off:             toggle blocking of queries.
-    status:             show blocking status.
-    list [last]:        show whitelist, use last to show the nick blocked last.
-    add/del [nicks]:    add/delete nick(s) to/from whitelist. (if no nick is given, 'add' will use the last blocked one).
-                        ('nicks' is a list of nicks seperated by spaces).
-    reload:             reload whitelist (useful if you changed the file-location i.e. to use a common file).
-    blocked [clear]:    list blocked nicks. If arg 'clear' is given all blocked nicks will be removed.
+    on/off:              toggle blocking of queries.
+    status:              show blocking status.
+    list [last]:         show whitelist, use last to show the nick blocked last.
+    add/del [nicks]:     add/delete nick(s) to/from whitelist. (if no nick is given, 'add' will use the last blocked one).
+                         ('nicks' is a list of nicks seperated by spaces).
+    reload:              reload whitelist (useful if you changed the file-location i.e. to use a common file).
+    blocked [clear]:     list blocked nicks. If arg 'clear' is given all blocked nicks will be removed.
 
 Script Options:
-    whitelist:          path/file-name to store/read nicks not to be blocked.
-    block_queries:      'on', 'off' to enable or disable $COMMAND.
+    whitelist:           path/file-name to store/read nicks not to be blocked.
+    block_queries:       'on', 'off' to enable or disable $COMMAND.
+    auto_message:        Messages to inform used that you don't like to get private messages without asking first.
+                         '%N' will be replaced with users nick.
+                         default: 'Right now I ignore all queries - perhaps not all :)'
+    auto_message_prefix: Prefix for auto message, may not be empty!
+                         default: 'Auto-Message: '
 
 By default all private messages (/query, /msg) from nicks not in the whitelist will be blocked.
  - to allow all private message, $SCRIPT can be disabled, type '/$COMMAND off'.
@@ -92,12 +97,14 @@ my $CALLBACK_DATA = undef;
 # script options
 my %SETTINGS = (
     "block_queries" => "off",
-    "whitelist" =>  "qb-whitelist.txt",
+    "whitelist"     => "qb-whitelist.txt",
+    "auto_message"  => "Right now I ignore all queries - perhaps not all :)",
+    "auto_message_prefix" => "Auto-Message: ",
 );
 
 # FIXME store server too?
 my $Last_query_nick = undef;
-my $deny_message = "Auto-Message: Right now I ignore all queries - perhaps not all :)";
+my $Deny_message = "";
 
 sub DEBUG {weechat::print('', "***\t" . $_[0]);}
 
@@ -206,7 +213,9 @@ sub modifier_irc_in_privmsg {
             }
 
             # auto responce msg to query_nick
-            weechat::command( '', "/msg -server $server $query_nick $deny_message " );
+            my $msg = $Deny_message;
+            $msg =~ s/%N/$query_nick/g;
+            weechat::command( '', "/msg -server $server $query_nick $msg " );
             $Blocked{$query_nick} = 0;
         }
             $Blocked{$query_nick}++;
@@ -384,11 +393,13 @@ sub qb_query {
     return weechat::WEECHAT_RC_OK;
 }
 
+# add nick as allowed if responce isn't auto reply
 sub qb_msg {
-#    my $nick = ($_[2] =~ /:(.+?)\!.+? PRIVMSG $my_nick :(\w.*)/ 
+    my ($msg) = $_[2] =~ /^\/msg -server .*?\s.*?\s(.*)/;
     my $n = _get_nick($_[2]);
-    #_add($n) unless nick_allowed($n) or $_[2] =~ /$deny_message/;
-    _add($n) unless nick_allowed($n) or $_[2] =~ /Auto-Message/;
+    my $prefix = weechat::config_get_plugin('auto_message_prefix');
+
+    _add($n) unless nick_allowed($n) or $msg =~ /^$prefix/;
 
     return weechat::WEECHAT_RC_OK;
 }
@@ -408,6 +419,7 @@ if ( weechat::register( $SCRIPT, $AUTHOR, $VERSION, $LICENSE, $DESCRIPTION, "", 
         weechat::config_set_plugin( $option, $default_value )
           if weechat::config_get_plugin($option) eq "";
     }
+    $Deny_message = weechat::config_get_plugin('auto_message_prefix') . weechat::config_get_plugin('auto_message');
     whitelist_read();
     weechat::print( '', "$COMMAND: loaded whitelist '" . weechat::config_get_plugin( "whitelist" ) . "'");
 
