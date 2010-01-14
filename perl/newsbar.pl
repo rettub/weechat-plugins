@@ -78,6 +78,24 @@
 # Changelog:
 ##########################
 #
+# Version 0.06 2010-01-14
+#   * fixes
+#     - missing use of option 'beep_duration'
+#
+#   * new options
+#     - ssh_key
+#     - add arg '--beep' for '/newsbar add'
+#
+#   * others
+#     - renamed option beep_ssh_host into ssh_host
+#     - changed default values for beep_freq* to 1000
+#     - more use of user configs for colors
+#     - update script example for newsbeuter
+#     - lowercase beep status
+#     - colorize DEBUG, print script-name too
+#     - set beep frequence of highlights in server buffer to option 'beep_freq_msg'
+#     - newsbar: beautify local/remote state for 'beep'
+#
 # Version 0.05 2009-11-11
 #   * new options:
 #     - beep_duration: beep duration in milliseconds
@@ -125,7 +143,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.05;
+my $Version = 0.06;
 
 # constants
 #
