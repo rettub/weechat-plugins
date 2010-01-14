@@ -589,10 +589,11 @@ sub newsbar {
         } elsif ( $cmd eq 'clear' ) {
             _bar_clear($arg);
         } elsif ( $cmd eq 'add' ) {
-            my ($add_cmd, $value) = ($arg =~ /^(--color)\s+(.*?)(\s+|\$)/);
+            my $beep = $arg =~ s/--beep//;
+            my ($add_cmd, $value) = ($arg =~ /^\s*?(--color)\s+(.*?)(\s+|\$)/);
 
             if ( defined $add_cmd and $add_cmd eq '--color' ) {
-                $arg =~ s/^--color\s+$value\s*//;
+                $arg =~ s/^\s*?--color\s+$value\s*//;
                 if ( $arg =~ /\t/ ) {
                     $arg =~ s/\s*\t\s*(.*)/\t$1/;
                     my $color_code = weechat::color($value);
@@ -611,6 +612,7 @@ sub newsbar {
                }
             }
 
+            _beep($Beep_freq_pr, weechat::config_get_plugin('beep_duration') ) if $beep;
             _bar_print($arg);
         }
     }
