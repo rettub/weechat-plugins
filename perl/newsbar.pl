@@ -311,7 +311,7 @@ my $Beep_remote = '';
 # XXX track changes for irc_nick_find_color(),  be ready for 256 colors
 {
 
-sub DEBUG {weechat::print('', "***\t" . $_[0]);}
+sub DEBUG {weechat::print('', _color_str('yellow', "***") . "\t$SCRIPT: $_[0]");}
 
 sub _beep {
     my $arg = weechat::config_get_plugin('beep_cmd');
