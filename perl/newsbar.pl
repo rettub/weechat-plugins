@@ -200,11 +200,17 @@ Arguments:
                     \$ echo "*/newsbar add simple message" > ~/.weechat/weechat_fifo_$$
 
                     Example (script for newsbeuter's 'notify-program'):
-                    (You can delete all this messages with '/newsbar <c>clear</c> [RSS]')
                     #/bin/sh
+                    # file /bin/nb2newsbar.sh
+                    # clear old lines containing [RSS], print newsbeuters notify
                     # XXX This script assumes that only one weechat-client is runnig on that host
-                    WPID=`pgrep weechat-curses`
-                    [ "x\$WPID" != "x" ] && echo -e "*/newsbar add --color brown [RSS]\\t\$@" \\
+                    # XXX depends on pgrep
+                    #
+                    # related example settings in ~/.newsbeuter/config
+                    # notify-format  "%d new articles (%n unread articles, %f unread feeds)"
+                    # notify-program "~/bin/nb2newsbar.sh"
+                    WPID=`pgrep weechat-curses
+                    [ "x\$WPID" != "x" ] && echo -e "*/newsbar clear \\[RSS\\]\\n*/newsbar add --color brown [RSS]\\t\$@" \\
                                              > "\$HOME/.weechat/weechat_fifo_\$WPID"
 
     toggle,
