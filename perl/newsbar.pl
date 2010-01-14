@@ -138,7 +138,8 @@ my %SETTINGS = (
     "beep_freq_msg"          => "1000",
     "beep_duration"          => "20",
     "beep_cmd"               => "beep -f %F -l %L",
-    "beep_ssh_host"          => "",
+    "ssh_host"               => "",
+    "ssh_key"                => "",
     "beep_remote"            => "off",
     "show_highlights"        => "on",
     "away_only"              => "off",
@@ -236,11 +237,15 @@ Config settings:
                             default: '$SETTINGS{beep_duration}'
     beep_cmd:               command to be executed on 'beeps'
                             default: '$SETTINGS{beep_cmd}'
-    beep_remote:            beep on a remote host (see: option <c>beep_ssh_host</c>)
+    beep_remote:            beep on a remote host (see: option <c>ssh_host</c>)
                             default: '$SETTINGS{beep_remote}'
-    beep_ssh_host:          host (and optional user) where remote beeps should
+    ssh_host:               host (and optional user) where remote beeps should
                             be executed
-                            default: '$SETTINGS{beep_ssh_host}'
+                            default: '$SETTINGS{ssh_host}'
+    ssh_key:                ssh key (identity_file) for remote commands
+                            (you can use ssh-agent instead, then there's no need for
+                            this option)
+                            default: '$SETTINGS{ssh_key}'
     away_only:              Collect highlights only if you're away.
                             default: '$SETTINGS{away_only}'
     show_highlights:        Enable/disable handling of public messages. ('on'/'off')
@@ -312,8 +317,10 @@ sub _beep {
     my $arg = weechat::config_get_plugin('beep_cmd');
     $arg =~ s/%F/$_[0]/;
     $arg =~ s/%L/$_[1]/;
-    my $ssh_host = weechat::config_get_plugin('beep_ssh_host');
-    my $ssh_cmd  = "ssh $ssh_host";                             # FIXME optiion?
+    my $ssh_host = weechat::config_get_plugin('ssh_host');
+    my $ssh_key  = weechat::config_get_plugin('ssh_key');
+    $ssh_key = "-i $ssh_key " if $ssh_key;
+    my $ssh_cmd  = "ssh $ssh_key $ssh_host";
 
     if ( weechat::config_get_plugin('beeps') eq 'on' ) {
         if ( $ssh_host ne ''
@@ -666,8 +673,13 @@ sub beep_remote_config_changed {
 #    my $option = shift;
 #    my $value = shift;
 
-    $Beep_remote = $_[2] eq 'on' ? '(remote)' : '(local) ';
-    weechat::bar_item_update($Bar_title_name);
+    my $c = $_[2];
+    if ( $c eq 'on' and weechat::config_get_plugin('ssh_host') eq '') {
+        DEBUG("cant beep on remote, 'ssh_host' not set");
+    } else {
+        $Beep_remote = $c eq 'on' ? weechat::config_get_plugin('ssh_host') : 'local';
+        weechat::bar_item_update($Bar_title_name);
+    }
 
     return weechat::WEECHAT_RC_OK;
 }
@@ -727,7 +739,7 @@ sub init_bar {
     $Bar_hidden = weechat::config_get_plugin('bar_hidden_on_start')
       unless defined $Bar_hidden;
 
-    $Beep_remote = weechat::config_get_plugin('beep_remote') eq 'on' ? '(remote)' : '(local) ';
+    $Beep_remote = weechat::config_get_plugin('beep_remote') eq 'on' ?  weechat::config_get_plugin('ssh_host') : 'local';
     $Beeps = weechat::config_get_plugin('beeps');
     $Beeps = ' ' . $Beeps if $Beeps eq 'on';
 
