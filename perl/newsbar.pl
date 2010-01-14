@@ -424,7 +424,8 @@ sub _bar_clear {
 sub _bar_date_time {
     my $dt = strftime( weechat::config_string (weechat::config_get('weechat.look.buffer_time_format')), localtime);
 
-    my $dc     = weechat::color('chat_time_delimiters');
+    my $dc     = weechat::color(
+        weechat::config_string(weechat::config_get('weechat.color.chat_time_delimiters')));
     my $tdelim = $dc . ":" . weechat::color ("reset");
     my $ddelim = $dc . "-" . weechat::color ("reset");
     
@@ -583,7 +584,7 @@ sub newsbar {
             _bar_print(
                 weechat::color( weechat::config_get_plugin('memo_tag_color') )
                   . "[memo]"
-                  . weechat::color('default,default') . "\t"
+                  . weechat::color('reset') . "\t"
                   . ( defined $arg ? $arg : '' ) );
         } elsif ( $cmd eq 'clear' ) {
             _bar_clear($arg);
@@ -764,10 +765,20 @@ sub init_bar {
             "0",
             weechat::config_get_plugin('bar_visible_lines'),
             "default",                              "default",
-            "default",
+            weechat::config_string(weechat::config_get('weechat.bar.newsbar.color_bg')),
             weechat::config_get_plugin('bar_seperator'),
             $bar_name
         );
+    }
+
+    my $c;
+    if ( $c = weechat::config_string( weechat::config_get('weechat.bar.newsbar.color_bg') ) )
+    {
+        $c = weechat::config_string(weechat::config_get('weechat.bar.title.color_bg'));
+        `echo "c: $c" >/tmp/title.color_bg`;
+    }
+    else {
+        `echo "c: $c" >/tmp/newsbar.color_bg`;
     }
     unless (defined $Bar_title) {
         weechat::bar_item_new( $Bar_title_name, "build_bar_title", "" );
@@ -778,7 +789,7 @@ sub init_bar {
             "vertical",                             "vertical",
             "0",                                    '1',
             "default",                              "default",
-            "default",
+            $c,
             'off',
             $Bar_title_name
         );
@@ -804,13 +815,25 @@ sub unload {
 }
 # }}}
 
+# FIXME call if config var 'title' changed
 sub build_bar_title {
 
-    # FIXME user config
+    # FIXME hook into user config (colors) changed, rebuild title
+    my $cfg =
+    weechat::color(weechat::config_string(weechat::config_get('weechat.bar.title.color_fg')));
+    my $cdelm =
+    weechat::color(weechat::config_string(weechat::config_get('weechat.bar.status.color_delim')));
+    my $cst_num = 
+    weechat::color("status_number");
+    my $cst_name = 
+    weechat::color("status_name");
     my $title =
-        weechat::color(",blue")
-      . weechat::config_get_plugin('bar_title')
-      . ": [%I] [active: %A | beep: %B %R | most recent: first]";
+        $cfg . weechat::config_get_plugin('bar_title') . ": "
+      . $cdelm . "[" . $cst_num . "%I"
+      . $cdelm . "] [active:" . $cst_name . " %A"
+      . $cdelm . "] [beep: "
+      . $cst_name . "%B" . $cdelm . "(" . $cst_name . "%R" . $cdelm . ")"
+      . $cdelm . "] [most recent: " . "first" . "]";
 
     my $i = @Bstr;
     $i ||= 0;
@@ -856,10 +879,16 @@ sub build_bar {
         $i++;
     }
 
+    # FIXME rebuild bar if user config changed
+    my $c_cps = weechat::color(
+        weechat::config_string(weechat::config_get('weechat.color.chat_prefix_suffix')));
+    my $l_ps  = weechat::config_string(weechat::config_get('weechat.look.prefix_suffix'));
     # FIXME use user config color
-    my $delim     = weechat::color ("chat_delimiters") . " | " . weechat::color ("default");
+    my $delim     = " " . $c_cps . $l_ps . weechat::color ("reset") . " ";
+    #my $delim     = " " . $c_cps . weechat::color ("default") . " ";
+    my $l_d  = length(weechat::string_remove_color($delim, ""));
 
-    $Text::Wrap::columns  = _terminal_columns() - ($nlen_max + $tlen_max + 3); # 3 := length of delim without color codes
+    $Text::Wrap::columns  = _terminal_columns() - ($nlen_max + $tlen_max + $l_d);
     $Text::Wrap::unexpand = 0;   # don't turn spaces into tabs
 
     foreach (@f) {
