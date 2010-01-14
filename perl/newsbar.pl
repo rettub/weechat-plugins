@@ -690,7 +690,7 @@ sub highlights_config_changed {
     my $value = shift;
 
     if ( $value eq 'on' ) {
-        $Baway = "IF AWAY";
+        $Baway = "if away";
     } else {
         if( $value ne 'off' ) {
             weechat::print('',  weechat::color('lightred') . "=!=\t" . "$SCRIPT: "
@@ -705,7 +705,7 @@ sub highlights_config_changed {
 
             weechat::config_set_plugin( 'away_only', 'off' );
         }
-        $Baway = " ALWAYS";
+        $Baway = " always";
     }
 
     weechat::bar_item_update($Bar_title_name);
