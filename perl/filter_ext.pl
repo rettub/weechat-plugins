@@ -1,4 +1,37 @@
 #!/usr/bin/perl -w
+# -----------------------------------------------------------------------------
+# Copyright (c) 2010 by rettub <rettub@gmx.net>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# filter_ext.pl for weechat version 0.3.0 or later
+#
+# Quick help against spam, extend /filter with prefixes for following args: del, enable, disable, list
+# Listens for highlights and sends them to a bar.
+#
+# Usage:
+#   install srcipt and do /help filter_ext
+#
+# Configuration:
+#   none
+#
+# -----------------------------------------------------------------------------
+# Changelog:
+#
+# Version 0.01 2010-01-17
+# initial version
 
 use 5.006;
 
