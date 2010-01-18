@@ -76,7 +76,11 @@
 # -----------------------------------------------------------------------------
 #
 # Changelog:
-##########################
+#
+# Version 0.07 2010-01-18
+#
+#   * newsbar: ignore private highlights if current buffer is private buffer for
+#     nick sending message
 #
 # Version 0.06 2010-01-14
 #   * fixes
@@ -143,7 +147,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.06;
+my $Version = 0.07;
 
 # constants
 #
