@@ -107,7 +107,7 @@ EO_HELP
 
 my $DEBUG=0;
 sub DEBUG {weechat::print('', "***\t" . $SCRIPT . ": $_[0]") if $DEBUG;}
-sub wprint {weechat::print('', "\t $_[0]");}
+sub wprint { weechat::print_date_tags("", 0, "no_filter", , "\t $_[0]");}
 sub werror {weechat::print('', weechat::prefix("error")."$COMMAND: $_[0]");}
 
 my $Input_buffer;
