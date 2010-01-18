@@ -30,6 +30,11 @@
 # -----------------------------------------------------------------------------
 # Changelog:
 #
+# Version 0.02 2010-01-18
+#   added hints to filter more aggressive
+#   usefull for SPAM like this:
+#   -- | CTCP requested by ntba: VERSION To find out more visit http://wiredside.com/page.ext
+#
 # Version 0.01 2010-01-17
 # initial version
 
@@ -41,7 +46,7 @@ use 5.006;
 use strict;
 use warnings;
 
-my $Version = 0.01;
+my $Version = 0.02;
 
 sub version {
     $Version;
