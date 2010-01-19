@@ -79,6 +79,18 @@
 #
 # Changelog:
 #
+# Version 0.08 2010-01-19
+#
+#   * protection for 'nick-flood'
+#     new options: nick_flood_protection, nick_flood_max_nicks
+#
+#     It's annoying if bots enter channels printing all nicks.
+#     newsbar can ignore those bots, for that
+#      set nick_flood_protection 'on'
+#
+#   * added direkt download url
+#   * newsbar: update TODO
+#
 # Version 0.07 2010-01-18
 #
 #   * newsbar: ignore private highlights if current buffer is private buffer for
@@ -149,7 +161,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.07;
+my $Version = 0.08;
 
 # constants
 #
