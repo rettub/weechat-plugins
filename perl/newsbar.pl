@@ -72,7 +72,6 @@
 #      (I use festival for it)
 # TODO exclude nicks, channels, servers, ... by eg. user defined whitelists
 #      and/or blacklists
-# TODO newsbeuter
 # -----------------------------------------------------------------------------
 #
 # Changelog:
