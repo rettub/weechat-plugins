@@ -248,6 +248,11 @@ Arguments:
                     # XXX This script assumes that only one weechat-client is runnig on that host
                     # XXX depends on pgrep
                     #
+                    # Example key binding to delete lines containing [RSS] and to
+                    # hide newsbar at once:
+                    #   key: </> on numeric keypad (check it for you with meta-k)
+                    #   meta-Oo => /newsbar clear \[RSS\]; /newsbar hide
+                    #
                     # related example settings in ~/.newsbeuter/config
                     # notify-format  "%d new articles (%n unread articles, %f unread feeds)"
                     # notify-program "~/bin/nb2newsbar.sh"
@@ -260,7 +265,7 @@ Arguments:
     scroll_home,    scroll_end,
     scroll_page_up, scroll_page_down,
     scroll_up,      scroll_down:
-                    Usefull for simple key bindings.
+                    Useful simple key bindings.
 
                     Example key bindings (all on numeric keypad):
                     <Return> /key meta-OM /newsbar <c>toggle</c>
@@ -270,7 +275,7 @@ Arguments:
                     <3>      /key meta-O[ /newsbar <c>scroll_page_down</c>
                     <8>      /key meta-OW /newsbar <c>scroll_up</c>
                     <2>      /key meta-OY /newsbar <c>scroll_down</c>
-                    <alt-,>  /key meta-meta-O_ /input delete_beginning_of_line; /input insert /newsbar <c>clear</c>
+                    <Alt><Return> meta-OM => /newsbar <c>clear</c>  (clear and hide)
 
 Config settings:
 
