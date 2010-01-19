@@ -859,11 +859,8 @@ sub init_bar {
     if ( $c = weechat::config_string( weechat::config_get('weechat.bar.newsbar.color_bg') ) )
     {
         $c = weechat::config_string(weechat::config_get('weechat.bar.title.color_bg'));
-        `echo "c: $c" >/tmp/title.color_bg`;
     }
-    else {
-        `echo "c: $c" >/tmp/newsbar.color_bg`;
-    }
+
     unless (defined $Bar_title) {
         weechat::bar_item_new( $Bar_title_name, "build_bar_title", "" );
         weechat::bar_new(
