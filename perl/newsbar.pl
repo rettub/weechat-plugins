@@ -79,6 +79,10 @@
 #
 # Changelog:
 #
+# Version 0.09 2010-01-19
+#
+#   * FIX remove old debug code creating files in /tmp
+#
 # Version 0.08 2010-01-19
 #
 #   * protection for 'nick-flood'
@@ -161,7 +165,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.08;
+my $Version = 0.09;
 
 # constants
 #
