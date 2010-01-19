@@ -28,10 +28,9 @@
 # GodOfGTA's Query-Blocker (eng) 1.2.3
 #   http://home.arcor.de/godofgta/xchat/queryblocker-eng.pl
 #
-#
-# Newest version available at:
-#   git://github.com/rettub/weechat-plugins.git
-#
+# -----------------------------------------------------------------------------
+# Download:
+# http://github.com/rettub/weechat-plugins/raw/master/perl/query_blocker.pl
 # -----------------------------------------------------------------------------
 # History:
 #

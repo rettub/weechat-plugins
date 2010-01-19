@@ -58,6 +58,9 @@
 #  debug:                  Show some debug/warning messages on failture
 #
 # -----------------------------------------------------------------------------
+# Download:
+# http://github.com/rettub/weechat-plugins/raw/master/perl/newsbar.pl
+# -----------------------------------------------------------------------------
 # XXX Known bugs:
 #     Bar must be redrawed if terminal size has changed (wrapping)
 #     Wrapping starts to early if some locale/utf chars contained in message string
