@@ -144,7 +144,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.10;
+my $Version = "0.10";
 
 # constants
 #
