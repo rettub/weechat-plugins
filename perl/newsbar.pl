@@ -237,15 +237,17 @@ Arguments:
     scroll_up,      scroll_down:
                     Useful simple key bindings.
 
-                    Example key bindings (all on numeric keypad):
-                    <Return> /key meta-OM /newsbar <c>toggle</c>
-                    <7>      /key meta-OU /newsbar <c>scroll_home</c>
-                    <1>      /key meta-O\\ /newsbar <c>scroll_end</c>
-                    <9>      /key meta-OZ /newsbar <c>scroll_page_up</c>
-                    <3>      /key meta-O[ /newsbar <c>scroll_page_down</c>
-                    <8>      /key meta-OW /newsbar <c>scroll_up</c>
-                    <2>      /key meta-OY /newsbar <c>scroll_down</c>
-                    <Alt><Return> meta-OM => /newsbar <c>clear</c>  (clear and hide)
+                    Example key bindings (all on numeric keypad, NUMLOCK := off):
+                    <Return> /key bind meta-OM /newsbar <c>toggle</c>
+                    <7>      /key bind meta-OU /newsbar <c>scroll_home</c>
+                    <1>      /key bind meta-O\\ /newsbar <c>scroll_end</c>
+                    <9>      /key bind meta-OZ /newsbar <c>scroll_page_up</c>
+                    <3>      /key bind meta-O[ /newsbar <c>scroll_page_down</c>
+                    <8>      /key bind meta-OW /newsbar <c>scroll_up</c>
+                    <2>      /key bind meta-OY /newsbar <c>scroll_down</c>
+                    <Alt><Return> /key bind meta-OM => /newsbar <c>clear</c>  (clear and hide)
+
+                    Check for your keys with <alt>-k (meta-k)!
 
 Config settings:
 
