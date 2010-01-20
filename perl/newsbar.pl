@@ -49,7 +49,10 @@
 #
 # Changelog:
 #
-BEGIN {
+BEGIN {  # Changelog for last version:
+         # changelog entries strating with '#' at beginning of line
+         # sry for unconventional, but I thing users should be able to browse
+         # last changes. Simply do '/newsbar changelog' out of weechat
 
     sub changelog {
         my $clog = <<END;
@@ -208,7 +211,7 @@ my $ARGS_HELP   = "<always> | <away_only> | <beep> | <nobeep> | <beep_local> | <
                  ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end> | <changelog>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
-    changelog:      print Changes since last version
+    changelog:      print changes since last version
     always:         enable highlights to bar always       (set config <c>away_only</c> = 'off').
     away_only:      enable highlights to bar if away only (set config <c>away_only</c> = 'on').
     beep:           enable beeps on highlights (set config <c>beeps</c> = 'on').

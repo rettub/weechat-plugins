@@ -32,7 +32,30 @@
 # Download:
 # http://github.com/rettub/weechat-plugins/raw/master/perl/query_blocker.pl
 # -----------------------------------------------------------------------------
-# History:
+# Changelog:
+#
+BEGIN {  # Changelog for last version:
+         # changelog entries strating with '#' at beginning of line
+         # sry for unconventional, but I thing users should be able to browse
+         # last changes. Simply do '/newsbar changelog' out of weechat
+
+    sub changelog {
+        # changelog entries starting with '#' below
+        my $clog = <<END;
+#   * added command changelog
+END
+        my @cl = split( "\$", $clog );
+            weechat::print("", "");
+            weechat::print("", "\tnewsbar: Changelog since last version: ");
+            weechat::print("", "\t-------------------------------------- ");
+        foreach my $i (@cl) {
+            # FIXME
+            #$i =~ s/#//;           # doesn't work
+            # $i =~ s/ignore/XXX/;  # works
+            weechat::print("", "\t$i");
+        }
+    }
+}
 #
 # 2010-01-10, rettub:
 #     version 0.2:
@@ -60,7 +83,7 @@ my $VERSION     = '0.2';
 my $LICENSE     = 'GPL3';
 my $DESCRIPTION = 'Simple blocker for private message (i.e. spam)';
 my $COMMAND     = "query_blocker";             # new command name
-my $ARGS_HELP   = "<on> | <off> | <status> | <list [last]> | <add [nick_1 [... [nick_n]]]> | <del nick_1 [... [nick_n]]> | <reload> | <blocked [clear]>";
+my $ARGS_HELP   = "<on> | <off> | <status> | <list [last]> | <add [nick_1 [... [nick_n]]]> | <del nick_1 [... [nick_n]]> | <reload> | <blocked [clear]> | <changelog>";
 my $CMD_HELP    = <<EO_HELP;
 If a not allowed (blocked) nick sends you a private message, you will see a notice about nick, server and the message, but no buffer will be created. Then the nick gets a 'blocked' state, which will prevent you from seeing his queries again till you restart WeeChat, reload the script or you put the nick into the whitelist (if newsbar.pl is running notices will be printed there). In addition the user will be informed about blocking by an auto responce message when he gains the blocked state. So he can ask you in the public channel to allow his private messages.
 If you send a private message to a user, his nick will be added to the whitelist.
@@ -74,6 +97,7 @@ Arguments:
                          ('nicks' is a list of nicks seperated by spaces).
     reload:              reload whitelist (useful if you changed the file-location i.e. to use a common file).
     blocked [clear]:     list blocked nicks. If arg 'clear' is given all blocked nicks will be removed.
+    changelog:           print changes since last version
 
 Script Options:
     whitelist:           path/file-name to store/read nicks not to be blocked.
@@ -95,7 +119,7 @@ By default all private messages (/query, /msg) from nicks not in the whitelist w
 NOTE: If you load $SCRIPT the first time, blocking of private messages is disabled, you have to enable blocking, type '/$COMMAND on'.
 EO_HELP
 
-my $COMPLETITION  = "on|off|status|list|add|del|reload|blocked";
+my $COMPLETITION  = "on|off|status|list|add|del|reload|blocked|changelog";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -331,6 +355,8 @@ sub query_blocker {
         }
     } elsif ( $args eq 'reload' ) {
         whitelist_read();
+    } elsif ( $args eq 'changelog' ) {
+        changelog();
     } else {
         my ( $cmd, $arg ) = ( $args =~ /(.*?)\s+(.*)/ );
         $cmd = $args unless $cmd;
