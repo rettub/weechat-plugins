@@ -545,7 +545,7 @@ sub check_nick_flood {
         last if not defined $n[$i];    # messages has less words
         $is_nick++ if weechat::nicklist_search_nick( $bufferp, '', $n[$i] );
     }
-    return $is_nick == $Nick_flood_max_nicks;
+    return defined $is_nick and $is_nick == $Nick_flood_max_nicks;
 }
 
 # colored output of hilighted text to bar
