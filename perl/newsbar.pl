@@ -25,37 +25,7 @@
 #
 #
 # Usage:
-#
-#  Simply load the script, and all highlights in all channels will be sent to a
-#  bar.
-#
-#  Simple commands:
-#  /newsbar always         enable highlights to bar always.
-#  /newsbar away_only      enable highlights to bar if away only
-#  /newsbar clear [regexp] clears the bar optional with perl regexp
-#  /newsbar memo [text]    writes text into the script's bar
-#  /newsbar add text       text formatted the script's bar
-#
-# Configuration:
-#
-#  away_only:              collect hihlights only if away isn't set
-#  show_highlights         Enable/disable handling of public messages
-#  show_priv_msg           Enable/disable handling of private messages
-#  show_priv_server_msg    Enable/disable handling of private server messages
-#  format_public :         format-string for public highlights
-#  format_private:         format-string for private highlights
-#                          %n : nick,    %N : colored nick
-#                          %c : channel, %C : colored channel
-#                          %s : server
-#  memo_tag_color          Color of '[memo]'
-#  remove_bar_on_unload    Remove bar when script will be unloaded. 
-#  bar_auto_hide           Hide bar if empty.
-#  bar_hidden_on_start     Start with a hidden bar.
-#  bar_visible_lines       lines visible if bar is shown.
-#  bar_seperator           Show bar separator line.
-#  bar_title               Title of info bar
-#
-#  debug:                  Show some debug/warning messages on failture
+#     see /help newsbar
 #
 # -----------------------------------------------------------------------------
 # Download:
