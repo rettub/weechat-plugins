@@ -49,6 +49,24 @@
 #
 # Changelog:
 #
+BEGIN {
+
+    sub changelog {
+        my $clog = <<END;
+#   * added command changelog
+END
+        my @cl = split( "\$", $clog );
+            weechat::print("", "");
+            weechat::print("", "\tnewsbar: Changelog since last version: ");
+            weechat::print("", "\t-------------------------------------- ");
+        foreach my $i (@cl) {
+            # FIXME
+            #$i =~ s/#//;           # doesn't work
+            # $i =~ s/ignore/XXX/;  # works
+            weechat::print("", "\t$i");
+        }
+    }
+}
 # Version 0.10 2010-01-20
 #
 #   * FIX warning about undefined var
@@ -187,10 +205,10 @@ my $COMMAND     = "newsbar";             # new command name
 my $ARGS_HELP   = "<always> | <away_only> | <beep> | <nobeep> | <beep_local> | <beep_remote> | <clear [regexp]>"
                  ."| <memo [text]> | <add [--color color] text>"
                  ."| <toggle> | <hide> | <show>"
-                 ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end>";
+                 ."| <scroll_home> | <scroll_page_up> | <scroll_page_down> | <scroll_up> | <scroll_down> | <scroll_end> | <changelog>";
 my $CMD_HELP    = <<EO_HELP;
 Arguments:
-
+    changelog:      print Changes since last version
     always:         enable highlights to bar always       (set config <c>away_only</c> = 'off').
     away_only:      enable highlights to bar if away only (set config <c>away_only</c> = 'on').
     beep:           enable beeps on highlights (set config <c>beeps</c> = 'on').
@@ -331,7 +349,7 @@ Config settings:
 EO_HELP
 
 my $COMPLETITION  =
-"always|away_only|beep|nobeep|beep_local|beep_remote|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end";
+"always|away_only|beep|nobeep|beep_local|beep_remote|clear|memo|add|toggle|hide|show|scroll_down|scroll_up|scroll_page_down|scroll_page_up|scroll_home|scroll_end|changelog";
 my $CALLBACK      = $COMMAND;
 my $CALLBACK_DATA = undef;
 
@@ -637,6 +655,8 @@ sub newsbar {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y-1");
     } elsif ( $_cmd eq 'scroll_down' ) {
             weechat::command('', "/bar scroll " . weechat::config_get_plugin('bar_name') . " * y+1");
+    } elsif ( $_cmd eq 'changelog' ) {
+            changelog();
     } else {
         my ( $cmd, $arg ) = ( $_cmd =~ /(.*?)\s+(.*)/ );
         $cmd = $_cmd unless $cmd;
