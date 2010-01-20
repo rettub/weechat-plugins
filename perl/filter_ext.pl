@@ -32,6 +32,29 @@
 # -----------------------------------------------------------------------------
 # Changelog:
 #
+BEGIN {  # Changelog for last version:
+         # changelog entries strating with '#' at beginning of line
+         # sry for unconventional, but I thing users should be able to browse
+         # last changes. Simply do '/newsbar changelog' out of weechat
+
+    sub changelog {
+        # changelog entries starting with '#' below
+        my $clog = <<END;
+#   * added command changelog
+END
+        my @cl = split( "\$", $clog );
+            weechat::print("", "");
+            weechat::print("", "\tnewsbar: Changelog since last version: ");
+            weechat::print("", "\t-------------------------------------- ");
+        foreach my $i (@cl) {
+            # FIXME
+            #$i =~ s/#//;           # doesn't work
+            # $i =~ s/ignore/XXX/;  # works
+            weechat::print("", "\t$i");
+        }
+    }
+}
+#
 # Version 0.03 2010-01-18
 #
 #   FIX: use weechat::print_date_tags() to list filters
@@ -64,9 +87,9 @@ my $AUTHOR      = "rettub";
 my $LICENCE     = "GPL3";
 my $DESCRIPTION = "Quick help against spam, extend /filter with prefixes for following args: del, enable, disable, list";
 my $COMMAND     = "filter_ext";             # new command name
-my $COMPLETITION  = "del|enable|disable|list";
+my $COMPLETITION  = "del|enable|disable|list|changelog";
 my $CALLBACK      = $COMMAND;
-my $ARGS_HELP   = "list regex | del regex | enable regex | disable regex";
+my $ARGS_HELP   = "list regex | del regex | enable regex | disable regex | changelog";
 my $CMD_HELP    = <<EO_HELP;
 
 Quick access to filters on spam invasion via prefixes for filter-names.
@@ -108,6 +131,9 @@ for aggressive filters:
   /alias /fal     /filter_ext list SPAMAGR
   /alias /fad     /filter_ext disable SPAMAGR
   /alias /fae     /filter_ext enable SPAMAGR
+
+To see changes since last version do:
+   /filter_ext changelog
 
 See /help filter for details. If y're using weechat > 0.3.0 take a look at irc.look.display_ctcp*
 EO_HELP
@@ -200,17 +226,21 @@ sub filter_ext {
         DEBUG($_cmd);
         DEBUG($args);
 
-        if ( not defined $args ) {
-            werror("no regex defined see /help $SCRIPT" );
-    return weechat::WEECHAT_RC_OK;
+    if ( not defined $args ) {
+        if ( $_cmd eq 'changelog' ) {
+            changelog();
+        } else {
+            werror("no regex defined see /help $SCRIPT");
         }
+        return weechat::WEECHAT_RC_OK;
+    }
     if ( $_cmd eq 'list' ) {
         list($args);
-    } elsif ($_cmd eq 'disable' ) {
-        toggle($args, $_cmd, ENABLED);
-    } elsif ($_cmd eq 'enable' ) {
-        toggle($args, $_cmd, DISABLED);
-    } elsif ($_cmd eq 'del' ) {
+    } elsif ( $_cmd eq 'disable' ) {
+        toggle( $args, $_cmd, ENABLED );
+    } elsif ( $_cmd eq 'enable' ) {
+        toggle( $args, $_cmd, DISABLED );
+    } elsif ( $_cmd eq 'del' ) {
         del($args);
     }
 
