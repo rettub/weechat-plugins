@@ -49,6 +49,15 @@
 #
 # Changelog:
 #
+# Version 0.10 2010-01-20
+#
+#   * FIX warning about undefined var
+#   * examples for key bindings
+#     - add 'bind'
+#     - typo,
+#     - new example
+#   * remove usage in comments (not in sync)
+#
 # Version 0.09 2010-01-19
 #
 #   * FIX remove old debug code creating files in /tmp
@@ -135,7 +144,7 @@ use POSIX qw(strftime);
 use strict;
 use warnings;
 
-my $Version = 0.09;
+my $Version = 0.10;
 
 # constants
 #
