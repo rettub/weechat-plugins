@@ -212,7 +212,6 @@ sub newsbar {
 }
 #}}}
 
-# FIXME server needed?
 sub info_as_notice {
     my ( $server, $my_nick, $nick, $message ) = @_;
 
