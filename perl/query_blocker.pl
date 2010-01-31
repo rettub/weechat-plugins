@@ -216,7 +216,7 @@ sub newsbar {
 sub info_as_notice {
     my ( $server, $my_nick, $nick, $message ) = @_;
 
-    weechat::command( '', "/notice -server $server $my_nick $nick Tries to start aquery: $message" );
+    weechat::command( '', "/notice -server $server $my_nick $nick Tries to start a query: $message" );
     weechat::command( '', "/notice -server $server $my_nick $nick To allow the query type: /$COMMAND add $nick" )
       unless (weechat::config_get_plugin('show_hint') eq 'off');
 }
