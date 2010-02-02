@@ -51,7 +51,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 
-my $Version   = 0.01;
+my $Version   = '0.01';
 my $SCRIPT    = 'mplex';
 my $AUTHOR    = 'rettub';
 my $LICENSE   = "GPL3";
