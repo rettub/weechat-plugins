@@ -136,6 +136,9 @@ sub help {
     ."\n"
     ."\n"
     ."The script command 'switch2window' is intended to be used by other scripts or via key bindings\n"
+    ."  Example key binding (I'm using newsbar :) :\n"
+    ."      This will clear lines from newsbar matching '[RSS]', hide it  and switch directly to screens newsbeuter window\n"
+    ."      /key bind meta-Oo => /newsbar clear \[RSS\]; /newsbar hide; /mplex switch2window newsbeuter\n" 
     ."\n"
     ."If a user has set the status 'away' for a server, this status wll not be touched! (Idea stolen from XTs screen_away) \n"
     ."\n"
@@ -147,7 +150,7 @@ sub help {
 
 
 
-# GNU screen stuff {{{
+# Terminal multiplexer stuff {{{
 my %Server = ();
 my %Socket = ();
 use constant {
@@ -268,7 +271,7 @@ sub get_mp_socket {
     my $ret = undef;
 
     if ( $ENV{'STY'} and $ENV{'TMUX'} ) {
-	remove_timer("can't handle nested multiplexer (e.g. tmux in GNU screen or via versa)");
+        remove_timer("can't handle nested multiplexer (e.g. tmux in GNU screen or via versa)");
         return $ret;
     } elsif ( $ENV{'STY'} ) {
 
@@ -276,28 +279,33 @@ sub get_mp_socket {
 
         if ( $chk_cmd !~ /^No Sockets found/s ) {
 
-            $Socket{mp}    = 'screen';
+            $Socket{mp}      = 'screen';
             $Socket{session} = $ENV{'STY'};
             $Socket{path}    = $chk_cmd;
             $Socket{path} =~ s/^.+\d+ Sockets? in ([^\n]+)\.\n.+$/$1/s;
 
-	    $Socket{'socket'} = $Socket{path} . '/' . $Socket{session};
+            $Socket{'socket'} = $Socket{path} . '/' . $Socket{session};
             if ( -p $Socket{'socket'} ) {
 
                 $ret = 1;
             } else {
-		chomp $chk_cmd;
-		$chk_cmd =~ s/\s+/ /gm;
-#		$chk_cmd =~ s/\n/ -- /gm;
-		remove_timer("error accessing  screen socket from: '" . weechat::color('cyan') . $chk_cmd . weechat::color('reset') . "'");
+                chomp $chk_cmd;
+                $chk_cmd =~ s/\s+/ /gm;
+
+                #		$chk_cmd =~ s/\n/ -- /gm;
+                remove_timer( "error accessing  screen socket from: '" . weechat::color('cyan') . $chk_cmd . weechat::color('reset') . "'" );
             }
         }
     } elsif ( $ENV{'TMUX'} ) {
         $Socket{mp} = 'tmux';
         ( $Socket{'socket'} ) = $ENV{'TMUX'} =~ /(.*?),/;
-        ( $Socket{'path'}, $Socket{'session'} ) =
-          ( $Socket{'socket'} =~ /(.*)\/(.*)/ );
-        $ret = 1;
+        ( $Socket{'path'}, $Socket{'session'} ) = ( $Socket{'socket'} =~ /(.*)\/(.*)/ );
+        if ( -p $Socket{'socket'} ) {
+
+            $ret = 1;
+        } else {
+            remove_timer("error accessing  TMUX  socket");
+        }
     }
     return $ret;
 }
