@@ -283,8 +283,9 @@ sub get_mp_socket {
             $Socket{session} = $ENV{'STY'};
             $Socket{path}    = $chk_cmd;
             $Socket{path} =~ s/^.+\d+ Sockets? in ([^\n]+)\.\n.+$/$1/s;
-
             $Socket{'socket'} = $Socket{path} . '/' . $Socket{session};
+
+            # GNU screen uses a named pipe
             if ( -p $Socket{'socket'} ) {
 
                 $ret = 1;
@@ -300,7 +301,9 @@ sub get_mp_socket {
         $Socket{mp} = 'tmux';
         ( $Socket{'socket'} ) = $ENV{'TMUX'} =~ /(.*?),/;
         ( $Socket{'path'}, $Socket{'session'} ) = ( $Socket{'socket'} =~ /(.*)\/(.*)/ );
-        if ( -p $Socket{'socket'} ) {
+
+        # TMUX uses a socket
+        if ( -S $Socket{'socket'} ) {
 
             $ret = 1;
         } else {
