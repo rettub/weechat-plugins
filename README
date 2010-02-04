@@ -9,9 +9,9 @@ This repository provides my personal plugin scripts for weechat.
 - sample_script.pl   This script can print help and changelog either started
                      from perl or as plugin script within weechat
 - mplex.pl           Simple remote control of multiplexer, checking of
-		     detach/attach (TMUX, GNU screen). Optional: setting of the
-		     appropriate away status, executing of 3rd party script
-		     commands, emitting Signals if multiplexer state has
+                     detach/attach (TMUX, GNU screen). Optional: setting of the
+                     appropriate away status, executing of 3rd party script
+                     commands, emitting Signals if multiplexer state has
                      changed.
 
 Tons of thanks to FlashCode for his great IRC client weechat.
