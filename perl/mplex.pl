@@ -187,7 +187,11 @@ sub mp_switch2window {
     if ( $Socket{mp} eq 'screen' ) {
         `screen -S $Socket{session} -X select $w`;
     } else {
-        _error("Sorry, Dave I can't do that...  (switch2window isn't implemented for $Socket{mp})");
+        my $err = `tmux selectw -t $Socket{'session_id'}:$w`;
+        chomp $err;
+        if ( length($err) ) {
+            _error("Sorry, Dave I can't do that, $Socket{mp} throws an error: '" . weechat::color('red') . $err . weechat::color('reset') . "'");
+        }
     }
 }
 
@@ -312,12 +316,11 @@ sub get_mp_socket {
         }
     } elsif ( $ENV{'TMUX'} ) {
         $Socket{mp} = 'tmux';
-        ( $Socket{'socket'} ) = $ENV{'TMUX'} =~ /(.*?),/;
+        ( $Socket{'socket'}, $Socket{'server_pid'}, $Socket{'session_id'} ) = $ENV{'TMUX'} =~ /(.*?),(\d+?),(.*)/; # XXX session_id: contains digits only?
         ( $Socket{'path'}, $Socket{'session'} ) = ( $Socket{'socket'} =~ /(.*)\/(.*)/ );
 
         # TMUX uses a socket
         if ( -S $Socket{'socket'} ) {
-
             $ret = 1;
         } else {
             remove_timer("error accessing TMUX socket");
