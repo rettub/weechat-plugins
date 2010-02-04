@@ -27,7 +27,7 @@
 # * Based on idea of the script screen_away.pl for irssi written by
 #   Andreas 'ads' Scherbaum
 # * Idea for "Don't touch away stats for servers which have user defined 'away'"
-#   shamelessly stolen from Xt's script screen_away.py fpr weechat.
+#   shamelessly stolen from Xt's script screen_away.py for weechat.
 # 
 # * This script extends those scripts mentioned above by various errorchecks,
 #   emitting Signals, command queue executed on attach/detach, and a simple command
