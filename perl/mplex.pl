@@ -184,7 +184,7 @@ my $mp_stat_old = undef;
 sub remove_timer {
     if ( $_[0] ) {
         _error( $_[0] );
-        _error( "check for" . ( defined $Socket{mp} ? $Socket{mp} : 'multiplexer' ) . "detach/attach disabled" );
+        _error( "check for " . ( defined $Socket{mp} ? $Socket{mp} : 'multiplexer' ) . " detach/attach disabled" );
     }
 
     if ( $Hooks{timer} ) {
@@ -293,7 +293,7 @@ sub get_mp_socket {
                 $chk_cmd =~ s/\s+/ /gm;
 
                 #		$chk_cmd =~ s/\n/ -- /gm;
-                remove_timer( "error accessing  screen socket from: '" . weechat::color('cyan') . $chk_cmd . weechat::color('reset') . "'" );
+                remove_timer( "error accessing screen socket from: '" . weechat::color('cyan') . $chk_cmd . weechat::color('reset') . "'" );
             }
         }
     } elsif ( $ENV{'TMUX'} ) {
@@ -304,7 +304,7 @@ sub get_mp_socket {
 
             $ret = 1;
         } else {
-            remove_timer("error accessing  TMUX  socket");
+            remove_timer("error accessing TMUX socket");
         }
     }
     return $ret;
