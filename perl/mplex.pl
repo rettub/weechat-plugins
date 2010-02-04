@@ -40,6 +40,12 @@
 #
 # Changelog
 #
+# Version v0.02 04.02.2010
+#
+#   * FIX: use '-S' to check for TMUX socket
+#   * added 'Known issues' for two TMUX sessions impossible to get detached state
+#   * whitespace fixes,typo
+#
 # Version v0.01 02.02.2010
 #
 #   * initial version 
@@ -51,7 +57,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 
-my $Version   = '0.01';
+my $Version   = '0.02';
 my $SCRIPT    = 'mplex';
 my $AUTHOR    = 'rettub';
 my $LICENSE   = "GPL3";
