@@ -40,6 +40,10 @@
 #
 # Changelog
 #
+# Version v0.03 04.02.2010
+#
+#   * enable arg 'switch2window' for tmux
+#
 # Version v0.02 04.02.2010
 #
 #   * FIX: use '-S' to check for TMUX socket
@@ -57,7 +61,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 
-my $Version   = '0.02';
+my $Version   = '0.03';
 my $SCRIPT    = 'mplex';
 my $AUTHOR    = 'rettub';
 my $LICENSE   = "GPL3";
