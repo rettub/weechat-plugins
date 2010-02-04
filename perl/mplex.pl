@@ -142,6 +142,13 @@ sub help {
     ."\n"
     ."If a user has set the status 'away' for a server, this status wll not be touched! (Idea stolen from XTs screen_away) \n"
     ."\n"
+    ."\n"
+    ."Known issues:\n"
+    ."  Don't know TMUX as well, I considered that starting a weechat within a (new and only) tmux session, then starting an \n"
+    ."  second session in an other xterminal, detaching the first one (running weechat) - then there's no way to get the detached state \n"
+    ."  for the 'weechat' session. The socket file /var/run//tmux/tmux-UID/default keeps its executable state. Sorry don't have any clue for\n"
+    ."  a workaround. If any TMUX user can help - please tell me\n"
+    ."\n"
     ."have fun...\n"
     ;
 }
